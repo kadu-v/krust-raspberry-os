@@ -1,15 +1,12 @@
-#![no_std]
-#![no_main]
-
-use core::panic;
-
-mod bsp;
-mod cpu;
-mod panic_wait;
+use cortex_a::asm;
 
 //-------------------------------------------------------------------------------------------------
-// Kernel code
+// Archtectural Public Reexports
 //-------------------------------------------------------------------------------------------------
-fn kernel_init() -> ! {
-    panic!()
+
+#[inline(always)]
+pub fn wait_forever() -> ! {
+    loop {
+        asm::wfe();
+    }
 }

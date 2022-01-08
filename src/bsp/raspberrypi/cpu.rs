@@ -1,15 +1,8 @@
-#![no_std]
-#![no_main]
-
-use core::panic;
-
-mod bsp;
-mod cpu;
-mod panic_wait;
-
 //-------------------------------------------------------------------------------------------------
-// Kernel code
+// Public Defintions
 //-------------------------------------------------------------------------------------------------
-fn kernel_init() -> ! {
-    panic!()
-}
+
+/// Used by `arch` code to find the early boot core.
+#[no_mangle]
+#[link_section = ".text._start_arguments"]
+pub static BOOT_CORE_ID: u64 = 0;
