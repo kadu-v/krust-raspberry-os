@@ -44,12 +44,10 @@ impl QEMUOutputInner {
 impl fmt::Write for QEMUOutputInner {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         for c in s.chars() {
-            unsafe {
-                if c == '\n' {
-                    self.write_char('\r');
-                }
-                self.write_char(c);
+            if c == '\n' {
+                self.write_char('\r');
             }
+            self.write_char(c);
         }
         Ok(())
     }
