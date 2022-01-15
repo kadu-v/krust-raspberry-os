@@ -9,10 +9,13 @@ edition = "2021"
 
 
 [features]
-default = ["bsp_rpi3ap"]
-bsp_rpi3 = []
-bsp_rpi4 = []
-bsp_rpi3ap = []
+default = ["bsp_rpi3"]
+bsp_rpi3 = ["tock-registers"]
+bsp_rpi4 = ["tock-registers"]
+bsp_rpi3ap = ["tock-registers"]
+
+[dependencies]
+tock-registers = { version = "0.7.x", default-features = false, features = ["register_types"], optional = true }
 
 
 [[bin]]
