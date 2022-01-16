@@ -207,16 +207,19 @@ impl PL011UartInner {
     }
 
     fn read_char_converting(&mut self, blocking_mode: BlockingMode) -> Option<char> {
+        // 受信FIFOが空の場合
         if self.registers.FR.matches_all(FR::RXFE::SET) {
+            // ノンブロッキングモードの場合は、即座にreturn
             if blocking_mode == BlockingMode::NonBlocking {
                 return None;
             }
-
+            // ブロッキングモードの場合は、charを受信するまで待つ
             while self.registers.FR.matches_all(FR::RXFE::SET) {
                 cpu::nop();
             }
         }
 
+        // charをFIFOから読み取る
         let mut ret = self.registers.DR.get() as u8 as char;
 
         if ret == '\r' {
@@ -280,12 +283,15 @@ impl console::interface::Write for PL011Uart {
 }
 
 impl console::interface::Read for PL011Uart {
+    /// 受信FIFO(RX)から一文字を読み取る
     fn read_char(&self) -> char {
         self.inner
             .lock(|inner| inner.read_char_converting(BlockingMode::Blocking).unwrap())
     }
 
+    /// 受信FIFO(RX)を空にする
     fn clear_rx(&self) {
+        // FIFO の中身が空になるまで読み取る
         while self
             .inner
             .lock(|inner| inner.read_char_converting(BlockingMode::NonBlocking))

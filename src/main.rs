@@ -6,7 +6,7 @@
 
 use core::panic;
 
-use crate::console::interface::Statistics;
+use crate::console::interface::{Read, Statistics, Write};
 
 mod bsp;
 mod console;
