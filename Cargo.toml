@@ -5,8 +5,11 @@ name = "krust-raspberry-os"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "kernel"
+path = "src/main.rs"
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
 default = ["bsp_rpi3"]
@@ -16,15 +19,7 @@ bsp_rpi3ap = ["tock-registers"]
 
 [dependencies]
 tock-registers = { version = "0.7.x", default-features = false, features = ["register_types"], optional = true }
-chainloader = { path =  "./chainloader" }
 
-[[bin]]
-name = "kernel"
-path = "src/main.rs"
-
-[[bin]]
-name = "chainloader"
-path = "chainloader/src/main.rs"
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 cortex-a = { version = "7.x.x" }
