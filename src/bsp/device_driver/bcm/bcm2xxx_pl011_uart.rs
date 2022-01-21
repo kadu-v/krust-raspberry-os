@@ -1,13 +1,10 @@
 use crate::{
-    bsp::device_driver::common::MMIODerefWrapper,
-    console, cpu,
-    driver::{self, interface::DeviceDriver},
-    synchronization,
+    bsp::device_driver::common::MMIODerefWrapper, console, cpu, driver, synchronization,
     synchronization::NullLock,
 };
-use core::fmt::{self, Write};
+use core::fmt;
 use tock_registers::{
-    interfaces::{ReadWriteable, Readable, Writeable},
+    interfaces::{Readable, Writeable},
     register_bitfields, register_structs,
     registers::{ReadOnly, ReadWrite, WriteOnly},
 };

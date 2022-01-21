@@ -28,7 +28,6 @@ pub fn driver_manager() -> &'static impl driver::interface::DriverManager {
 //------------------------------------------------------------------------------
 // OS Interface Code
 //------------------------------------------------------------------------------
-use driver::interface::DriverManager;
 
 impl driver::interface::DriverManager for BSPDriverManager {
     fn all_device_drivers(&self) -> &[&'static (dyn DeviceDriver + Sync)] {
