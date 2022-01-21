@@ -129,7 +129,7 @@ impl GPIOInner {
     }
 
     // disable pull-up/down on pins 14 and 15
-    #[cfg(feature = "bsp_rpi3")]
+    #[cfg(any(feature = "bsp_rpi3", feature = "bsp_rpi3ap"))]
     fn disable_pud_14_15_bcm2837(&mut self) {
         use crate::{time, time::interface::TimeManager};
         use core::time::Duration;
@@ -150,7 +150,7 @@ impl GPIOInner {
     }
 
     // disable pull-up/down on pins 14 and 15
-    #[cfg(feature = "basp_rpi3")]
+    #[cfg(any(feature = "bsp_rpi4"))]
     fn disable_pud_14_15_bcm2711(&mut self) {
         self.registers.GPIO_PUP_CNTRL_REG0.write(
             GPIO_PUP_CNTRL_REG0::GPIO_PUP_PDN_CNTRL15::PullUp
@@ -164,7 +164,7 @@ impl GPIOInner {
             .GPFSEL1
             .modify(GPFSEL1::FSEL14::AltFunc0 + GPFSEL1::FSEL14::AltFunc0);
 
-        #[cfg(feature = "bsp_rpi3")]
+        #[cfg(any(feature = "bsp_rpi3", feature = "bsp_rpi3ap"))]
         self.disable_pud_14_15_bcm2837();
 
         #[cfg(feature = "bsp_rpi4")]
