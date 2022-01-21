@@ -3,6 +3,7 @@
 #![feature(panic_info_message)]
 #![feature(trait_alias)]
 #![feature(const_fn_fn_ptr_basics)]
+#![feature(format_args_nl)]
 
 use core::panic;
 
@@ -15,6 +16,7 @@ mod driver;
 mod panic_wait;
 mod print;
 mod synchronization;
+mod time;
 
 //-------------------------------------------------------------------------------------------------
 // Kernel code
@@ -39,35 +41,36 @@ unsafe fn kernel_init() -> ! {
 }
 
 fn kernel_main() -> ! {
-    use bsp::console::console;
-    use console::interface::All;
+    use core::time::Duration;
     use driver::interface::DriverManager;
-    println!(
-        "[0] {} version {}",
+    use time::interface::TimeManager;
+
+    info!(
+        "{} version {}",
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_VERSION")
     );
-    println!("[1] Booting on: {}", bsp::board_name());
+    info!("Booting on: {}", bsp::board_name());
 
-    println!("[2] Drivers loaded:");
+    info!(
+        "Architectural timer resolution: {} ns",
+        time::time_manager().resolution().as_nanos()
+    );
+
+    info!("Drivers loaded:");
     for (i, driver) in bsp::driver::driver_manager()
         .all_device_drivers()
         .iter()
         .enumerate()
     {
-        println!("      {}. {}", i + 1, driver.compatible());
+        info!("      {}. {}", i + 1, driver.compatible());
     }
 
-    println!(
-        "[3] Chars written: {}",
-        bsp::console::console().chars_written()
-    );
-    println!("[4] Echoing input now");
+    // Test a failing timer case.
+    time::time_manager().spin_for(Duration::from_nanos(1));
 
-    // Discard any spurious received characters before going into echo mode.
-    console().clear_rx();
     loop {
-        let c = bsp::console::console().read_char();
-        bsp::console::console().write_char(c);
+        info!("Spinning for 1 second");
+        time::time_manager().spin_for(Duration::from_secs(1));
     }
 }

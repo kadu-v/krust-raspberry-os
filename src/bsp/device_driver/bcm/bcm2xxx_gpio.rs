@@ -131,18 +131,19 @@ impl GPIOInner {
     // disable pull-up/down on pins 14 and 15
     #[cfg(feature = "bsp_rpi3")]
     fn disable_pud_14_15_bcm2837(&mut self) {
-        use crate::cpu;
+        use crate::{time, time::interface::TimeManager};
+        use core::time::Duration;
 
-        // Make an educated guess for a good delay value
-        const DELAY: usize = 2000;
+        // The Linux 2837 GPIO 1 us between the steps
+        const DELAY: Duration = Duration::from_micros(1);
 
         self.registers.GPPUD.write(GPPUD::PUD::Off);
-        cpu::spin_for_cycles(DELAY);
+        time::time_manager().spin_for(DELAY);
 
         self.registers
             .GPPUDLK0
             .write(GPPUDLK0::PUDLC15::AssertClock + GPPUDLK0::PUDLC14::AssertClock);
-        cpu::spin_for_cycles(DELAY);
+        time::time_manager().spin_for(DELAY);
 
         self.registers.GPPUD.write(GPPUD::PUD::Off);
         self.registers.GPPUDLK0.set(0);
