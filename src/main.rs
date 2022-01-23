@@ -13,6 +13,7 @@ mod bsp;
 mod console;
 mod cpu;
 mod driver;
+mod exception;
 mod panic_wait;
 mod print;
 mod synchronization;
@@ -51,6 +52,12 @@ fn kernel_main() -> ! {
         env!("CARGO_PKG_VERSION")
     );
     info!("Booting on: {}", bsp::board_name());
+
+    let (_, privilege_level) = exception::current_privilege_level();
+    info!("Current privilege level: {}", privilege_level);
+
+    info!("Exception handling state: ");
+    exception::asynchronous::print_state();
 
     info!(
         "Architectural timer resolution: {} ns",
