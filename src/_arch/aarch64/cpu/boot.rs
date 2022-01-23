@@ -41,8 +41,13 @@ unsafe fn prepare_el2_to_el1_transiton(phys_boot_stack_end_exclusive: u64) {
     //
     // First, fake a saved program status where all interuputs were masked and SP_EL1 was used as a
     // stack pointer
-    SPSR_EL2
-        .write(SPSR_EL2::D::Masked + SPSR_EL2::A::Masked + SPSR_EL2::I::Masked + SPSR_EL2::M::EL1h);
+    SPSR_EL2.write(
+        SPSR_EL2::D::Masked
+            + SPSR_EL2::A::Masked
+            + SPSR_EL2::I::Masked
+            + SPSR_EL2::F::Masked
+            + SPSR_EL2::M::EL1h,
+    );
 
     // Second, let the link register point to kenrel_init()
     ELR_EL2.set(crate::kernel_init as *const () as u64);
