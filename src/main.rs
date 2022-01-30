@@ -14,6 +14,7 @@ mod console;
 mod cpu;
 mod driver;
 mod exception;
+mod memory;
 mod panic_wait;
 mod print;
 mod synchronization;
