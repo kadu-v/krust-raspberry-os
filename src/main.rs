@@ -4,6 +4,7 @@
 #![feature(trait_alias)]
 #![feature(const_fn_fn_ptr_basics)]
 #![feature(format_args_nl)]
+#![feature(core_intrinsics)]
 
 use core::panic;
 
