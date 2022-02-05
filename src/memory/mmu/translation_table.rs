@@ -5,4 +5,4 @@ mod arch_translation_table;
 //--------------------------------------------------------------------------------------------------
 // Architectural Public Reexports
 //--------------------------------------------------------------------------------------------------
-// pub use arch_translation_table::KernelTranslationTable;
+pub use arch_translation_table::KernelTranslationTable;

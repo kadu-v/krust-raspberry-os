@@ -1,5 +1,5 @@
 use super::map as memory_map;
-use crate::memory::{self, mmu::*};
+use crate::memory::mmu::*;
 use core::ops::RangeInclusive;
 
 //--------------------------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ pub static LAYOUT: KernelVirtualLayout<NUM_MEM_RANGES> = KernelVirtualLayout::ne
             physical_range_translation: Translation::Identity,
             attribute_fields: AttributeFields {
                 mem_attributes: MemAttributes::CacheableDRAM,
-                acc_perms: AcessPermissons::ReadOnly,
+                acc_perms: AccessPermissions::ReadOnly,
                 execute_never: false,
             },
         },
@@ -31,7 +31,7 @@ pub static LAYOUT: KernelVirtualLayout<NUM_MEM_RANGES> = KernelVirtualLayout::ne
             physical_range_translation: Translation::Offset(memory_map::mmio::START + 0x20_0000),
             attribute_fields: AttributeFields {
                 mem_attributes: MemAttributes::Device,
-                acc_perms: AcessPermissons::ReadWrite,
+                acc_perms: AccessPermissions::ReadWrite,
                 execute_never: true,
             },
         },
@@ -41,7 +41,7 @@ pub static LAYOUT: KernelVirtualLayout<NUM_MEM_RANGES> = KernelVirtualLayout::ne
             physical_range_translation: Translation::Identity,
             attribute_fields: AttributeFields {
                 mem_attributes: MemAttributes::Device,
-                acc_perms: AcessPermissons::ReadWrite,
+                acc_perms: AccessPermissions::ReadWrite,
                 execute_never: true,
             },
         },
@@ -54,7 +54,7 @@ pub static LAYOUT: KernelVirtualLayout<NUM_MEM_RANGES> = KernelVirtualLayout::ne
 
 fn code_range_inclusive() -> RangeInclusive<usize> {
     #[allow(clippy::range_minus_one)]
-    RangeInclusive::new(super::code_start(), super::code_end_exclusive())
+    RangeInclusive::new(super::code_start(), super::code_end_exclusive() - 1)
 }
 
 fn remmapped_mmio_range_inclusive() -> RangeInclusive<usize> {
@@ -63,4 +63,11 @@ fn remmapped_mmio_range_inclusive() -> RangeInclusive<usize> {
 
 fn mmio_range_inclusive() -> RangeInclusive<usize> {
     RangeInclusive::new(memory_map::mmio::START, memory_map::mmio::END_INCLUSIVE)
+}
+
+//--------------------------------------------------------------------------------------------------
+// Private Code
+//--------------------------------------------------------------------------------------------------
+pub fn virt_mem_layout() -> &'static KernelVirtualLayout<NUM_MEM_RANGES> {
+    &LAYOUT
 }

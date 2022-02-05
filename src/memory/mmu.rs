@@ -9,9 +9,7 @@ use core::{fmt, ops::RangeInclusive};
 //--------------------------------------------------------------------------------------------------
 // Architectural Public Reexports
 //--------------------------------------------------------------------------------------------------
-// pub use arch_mmu::mmu;
-
-use crate::console::interface::Write;
+pub use arch_mmu::mmu;
 
 //--------------------------------------------------------------------------------------------------
 // Public Reexports
@@ -33,7 +31,7 @@ pub mod interface {
         // カーネルの初期に呼び出される
         // BSPが提供する `virt_mem_layout()` から変換テーブルを取得し、
         // それぞれのMMUに対して install/activate を行う
-        unsafe fn enable_mmu_and_chacing(&self) -> Result<(), MMUEnableError>;
+        unsafe fn enable_mmu_and_caching(&self) -> Result<(), MMUEnableError>;
 
         // MMUが利用可能なら、true
         // そのほかは false
@@ -64,7 +62,7 @@ pub enum MemAttributes {
 
 // アーキテクチャ非依存のアクセスパーミッション
 #[derive(Copy, Clone)]
-pub enum AcessPermissons {
+pub enum AccessPermissions {
     ReadOnly,
     ReadWrite,
 }
@@ -73,7 +71,7 @@ pub enum AcessPermissons {
 #[derive(Copy, Clone)]
 pub struct AttributeFields {
     pub mem_attributes: MemAttributes,
-    pub acc_perms: AcessPermissons,
+    pub acc_perms: AccessPermissions,
     pub execute_never: bool,
 }
 
@@ -123,7 +121,7 @@ impl<const GRANULE_SIZE: usize> TranslationGranule<GRANULE_SIZE> {
 impl<const AS_SIZE: usize> AddressSpace<AS_SIZE> {
     pub const SIZE: usize = Self::size_checked();
 
-    pub const SIZE_SIFHT: usize = Self::SIZE.trailing_zeros() as usize;
+    pub const SIZE_SHIFT: usize = Self::SIZE.trailing_zeros() as usize;
 
     const fn size_checked() -> usize {
         assert!(AS_SIZE.is_power_of_two());
@@ -138,7 +136,7 @@ impl Default for AttributeFields {
     fn default() -> Self {
         Self {
             mem_attributes: MemAttributes::CacheableDRAM,
-            acc_perms: AcessPermissons::ReadWrite,
+            acc_perms: AccessPermissions::ReadWrite,
             execute_never: true,
         }
     }
@@ -152,15 +150,15 @@ impl fmt::Display for TranslationDescriptor {
         let size = end - start + 1;
 
         // log2(1024)
-        const KIB_SHIFT: u32 = 10;
+        const KIB_RSHIFT: u32 = 10;
 
         // log2(1024 * 1024)
-        const MIB_SHIFT: u32 = 10;
+        const MIB_RSHIFT: u32 = 20;
 
-        let (size, unit) = if (size >> MIB_SHIFT) > 0 {
-            (size >> MIB_SHIFT, "MIB")
-        } else if (size >> KIB_SHIFT) > 0 {
-            (size >> KIB_SHIFT, "KiB")
+        let (size, unit) = if (size >> MIB_RSHIFT) > 0 {
+            (size >> MIB_RSHIFT, "MIB")
+        } else if (size >> KIB_RSHIFT) > 0 {
+            (size >> KIB_RSHIFT, "KiB")
         } else {
             (size, "Byte")
         };
@@ -171,8 +169,8 @@ impl fmt::Display for TranslationDescriptor {
         };
 
         let acc_p = match self.attribute_fields.acc_perms {
-            AcessPermissons::ReadOnly => "RO",
-            AcessPermissons::ReadWrite => "RW",
+            AccessPermissions::ReadOnly => "RO",
+            AccessPermissions::ReadWrite => "RW",
         };
 
         let xn = if self.attribute_fields.execute_never {

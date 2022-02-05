@@ -1,3 +1,7 @@
+
+PAGE_SIZE = 64K;
+PAGE_MASK = PAGE_SIZE - 1;
+
 /* 物理アドレスの開始アドレス */
 __rpi_phys_dram_start_addr = 0;
 
@@ -34,10 +38,13 @@ SECTIONS {
         __boot_core_stack_end_exclusive = .;    /* |            */
     } :segment_boot_core_stack
 
+    ASSERT((. & PAGE_MASK) == 0, "End of boot core stack is not page aligned")
+
 
     /**********************************************************************************************
     * Code + R0 Data + Global Offset Table
     ***********************************************************************************************/
+    __code_start = .;
     .text : {
         KEEP(*(.text._start))
         *(.text._start_arguments)   /* _start 関数の引数        */
@@ -53,10 +60,16 @@ SECTIONS {
         *(.got)
     } :segment_code
 
+    . = ALIGN(PAGE_SIZE);
+    __code_end_exclusive = .;
+
     /**********************************************************************************************
     * Data + BSS
     ***********************************************************************************************/
 
+    .data : { *(.data*) } :segment_data
+
+    
     .bss (NOLOAD) : ALIGN(16) {
         __bss_start = .;
         *(.bss*);
