@@ -28,6 +28,8 @@ unsafe fn kernel_init() -> ! {
     use driver::interface::DriverManager;
     use memory::mmu::interface::MMU;
 
+    exception::handling_init();
+
     if let Err(string) = memory::mmu::mmu().enable_mmu_and_caching() {
         panic!("MMU: {}", string);
     }
@@ -85,6 +87,25 @@ fn kernel_main() -> ! {
 
     // Test a failing timer case.
     time::time_manager().spin_for(Duration::from_nanos(1));
+
+    info!("");
+    info!("Trying to read from address 8 GiB...");
+    let mut big_addr: u64 = 8 * 1024 * 1024 * 1024;
+    unsafe { core::ptr::read_volatile(big_addr as *mut u64) };
+
+    info!("************************************************");
+    info!("Whoa! We recovered from a synchronous exception!");
+    info!("************************************************");
+    info!("");
+    info!("Let's try again");
+
+    // Now use address 9 GiB. The exception handler won't forgive us this time.
+    info!("Trying to read from address 9 GiB...");
+    big_addr = 9 * 1024 * 1024 * 1024;
+    unsafe { core::ptr::read_volatile(big_addr as *mut u64) };
+
+    // Will never reach here in this tutorial.
+    info!("Echoing input now");
 
     let remapped_uart = unsafe { bsp::device_driver::PL011Uart::new(0x1FFF_1000) };
     writeln!(
