@@ -1,29 +1,13 @@
-#![no_std]
-#![no_main]
-#![feature(panic_info_message)]
-#![feature(trait_alias)]
-#![feature(const_fn_fn_ptr_basics)]
 #![feature(format_args_nl)]
-#![feature(core_intrinsics)]
+#![no_main]
+#![no_std]
 
-use core::panic;
-
-use crate::console::interface::{Read, Statistics, Write};
-
-mod bsp;
-mod console;
-mod cpu;
-mod driver;
-mod exception;
-mod memory;
-mod panic_wait;
-mod print;
-mod synchronization;
-mod time;
+use libkernel::{bsp, console, driver, exception, info, memory, time};
 
 //-------------------------------------------------------------------------------------------------
 // Kernel code
 //-------------------------------------------------------------------------------------------------
+#[no_mangle]
 unsafe fn kernel_init() -> ! {
     use driver::interface::DriverManager;
     use memory::mmu::interface::MMU;
@@ -53,6 +37,7 @@ unsafe fn kernel_init() -> ! {
 fn kernel_main() -> ! {
     use core::time::Duration;
     use driver::interface::DriverManager;
+    use libkernel::console::interface::Write;
     use time::interface::TimeManager;
 
     info!(
