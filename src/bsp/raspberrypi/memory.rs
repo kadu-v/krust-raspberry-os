@@ -52,9 +52,10 @@ pub(super) mod map {
     // End address *1 は2の冪乗でなければならない
     // rasp3とrasp4ではメモリの容量が異なるが、教育用にメモリの容量は4GiBに設定する．
     // したがって、rasp3では4GiBに近い容量のメモリを必要とするプログラムの場合にクラッシュする
-    pub const END_INCLUSIVE: usize = 0xFFFF_FFFF;
-    pub const GPIO_OFFSET: usize = 0x0020_0000;
-    pub const UART_OFFSET: usize = 0x0020_1000;
+    pub const END_INCLUSIVE:  usize  = 0xFFFF_FFFF;
+    pub const GPIO_OFFSET:    usize  = 0x0020_0000;
+    pub const UART_OFFSET:    usize  = 0x0020_1000;
+    pub const MAILBOX_OFFSET: usize  = 0x0000_B880;
 
     #[cfg(feature = "bsp_rpi3")]
     pub mod mmio {
@@ -64,6 +65,7 @@ pub(super) mod map {
         pub const GPIO_START:       usize   = START + GPIO_OFFSET;
         pub const PL011_UART_START: usize   = START + UART_OFFSET;
         pub const END_INCLUSIVE:    usize   =         0x4000_FFFF;
+        pub const MAIBOX_START:     usize   = START + MAILBOX_OFFSET;
     }
 
     #[cfg(feature = "bsp_rpi4")]
@@ -74,6 +76,7 @@ pub(super) mod map {
         pub const GPIO_START:       usize   = START + GPIO_OFFSET;
         pub const PL011_UART_START: usize   = START + UART_OFFSET;
         pub const END_INCLUSIVE:    usize   =         0xFF84_FFFF;
+        pub const MAIBOX_START:     usize   = START + MAILBOX_OFFSET;
     }
 }
 
