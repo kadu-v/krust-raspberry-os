@@ -44,11 +44,11 @@ register_structs! {
     #[allow(non_snake_case)]
     pub RegisterBlock {
         (0x00 => RD: InMemoryRegister<u32, RD::Register>),
-        (0x04 => _reserved1),
+        (0x10 => _reserved1),
         (0x18 => ST: InMemoryRegister<u32, ST::Register>),
         (0x1c => _reserved2),
         (0x20 => WD: InMemoryRegister<u32, WD::Register>),
-        (0x24 => @END),
+        (0x30 => @END),
     }
 }
 
@@ -98,7 +98,14 @@ impl MailBoxInner {
         &self,
         ch: u8,
     ) -> Result<Messeage, MailBoxError> {
-        println!("Status register {:x}", self.registers.ST.get());
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x00) as *mut u32;
+        println!("raw RD: {:x}", core::ptr::read_volatile(ptr));
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x18) as *mut u32;
+        println!("raw ST: {:x}", core::ptr::read_volatile(ptr));
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
+        println!("raw WD: {:x}", core::ptr::read_volatile(ptr));
+
+        println!("Status register {:b}", self.registers.ST.read(ST::RD));
         loop {
             // busy loop until Read buffer is Full
             while self.registers.ST.matches_all(ST::RD::Empty) {
@@ -141,7 +148,7 @@ impl MailBoxInner {
         println!("raw write");
         // set mssage buffer address to Read regsiter of mailbox
         let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
-        core::ptr::write_volatile(ptr, 1);
+        core::ptr::write_volatile(ptr, msg.data + 1 as u32 + 0x40000000);
 
         let ptr = (0x0000_B880 + 0x3F00_0000 + 0x00) as *mut u32;
         println!("raw RD: {:x}", core::ptr::read_volatile(ptr));
