@@ -2,6 +2,7 @@ pub mod console;
 pub mod cpu;
 pub mod driver;
 pub mod frame_buffer;
+pub mod mailbox;
 pub mod memory;
 
 //--------------------------------------------------------------------------------------------------
@@ -17,8 +18,12 @@ static PL011_UART: device_driver::PL011Uart = unsafe {
     device_driver::PL011Uart::new(memory::map::mmio::PL011_UART_START)
 };
 
-static MAILBOX: device_driver::MailBox =
-    unsafe { device_driver::MailBox::new(memory::map::mmio::MAIBOX_START) };
+static MAILBOX: mailbox::MailBox =
+    unsafe { mailbox::MailBox::new(memory::map::mmio::MAILBOX_START) };
+
+static FRAMEBUFFER: frame_buffer::FrameBuffer =
+    unsafe { frame_buffer::FrameBuffer::new() };
+
 //--------------------------------------------------------------------------------------------------
 // Public Code
 //--------------------------------------------------------------------------------------------------

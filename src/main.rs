@@ -2,7 +2,7 @@
 #![no_main]
 #![no_std]
 
-use libkernel::{bsp, console, driver, exception, info, memory, time};
+use libkernel::{bsp, driver, exception, info, memory, print, println, time};
 
 //-------------------------------------------------------------------------------------------------
 // Kernel code
@@ -14,22 +14,20 @@ unsafe fn kernel_init() -> ! {
 
     exception::handling_init();
 
-    if let Err(string) = memory::mmu::mmu().enable_mmu_and_caching() {
-        panic!("MMU: {}", string);
-    }
-
     // Initialize all device
-    for i in bsp::driver::driver_manager()
+    for (_, i) in bsp::driver::driver_manager()
         .all_device_drivers()
         .into_iter()
+        .enumerate()
     {
         if let Err(x) = i.init() {
             panic!("Error loading driver: {}: {}", i.compatible(), x)
         }
+        println!("Start Kernel");
     }
     bsp::driver::driver_manager().post_device_driver_init();
     // println! is usable from here on
-
+    println!("Start Kernel");
     // Trasmit from unsafe to safe
     kernel_main();
 }
@@ -37,7 +35,6 @@ unsafe fn kernel_init() -> ! {
 fn kernel_main() -> ! {
     use core::time::Duration;
     use driver::interface::DriverManager;
-    use libkernel::console::interface::Write;
     use time::interface::TimeManager;
 
     info!(
@@ -72,32 +69,6 @@ fn kernel_main() -> ! {
 
     // Test a failing timer case.
     time::time_manager().spin_for(Duration::from_nanos(1));
-
-    info!("");
-    info!("Trying to read from address 8 GiB...");
-    let mut big_addr: u64 = 8 * 1024 * 1024 * 1024;
-    unsafe { core::ptr::read_volatile(big_addr as *mut u64) };
-
-    info!("************************************************");
-    info!("Whoa! We recovered from a synchronous exception!");
-    info!("************************************************");
-    info!("");
-    info!("Let's try again");
-
-    // Now use address 9 GiB. The exception handler won't forgive us this time.
-    info!("Trying to read from address 9 GiB...");
-    big_addr = 9 * 1024 * 1024 * 1024;
-    unsafe { core::ptr::read_volatile(big_addr as *mut u64) };
-
-    // Will never reach here in this tutorial.
-    info!("Echoing input now");
-
-    let remapped_uart = unsafe { bsp::device_driver::PL011Uart::new(0x1FFF_1000) };
-    writeln!(
-        remapped_uart,
-        "[     !!!    ] Writing through the remapped UART at 0x1FFF_1000"
-    )
-    .unwrap();
 
     loop {
         info!("Spinning for 1 second");

@@ -1,12 +1,12 @@
 use crate::{
-    bsp::device_driver::common::MMIODerefWrapper,
-    console, cpu, driver, synchronization,
+    bsp::{device_driver::common::MMIODerefWrapper, memory},
+    console, cpu, driver, print, println, synchronization,
     synchronization::{interface::Mutex, NullLock},
 };
 use tock_registers::{
-    interfaces::{Readable, Writeable},
+    interfaces::{ReadWriteable, Readable, Writeable},
     register_bitfields, register_structs,
-    registers::{ReadOnly, ReadWrite, WriteOnly},
+    registers::{InMemoryRegister, ReadOnly, ReadWrite, WriteOnly},
 };
 
 // Descriptions taken from
@@ -14,6 +14,7 @@ use tock_registers::{
 // - https://github.com/raspberrypi/documentation/files/1888662/BCM2837-ARM-Peripherals.-.Revised.-.V2-1.pdf
 // raspberypi 4b
 // - https://datasheets.raspberrypi.org/bcm2711/bcm2711-peripherals.pdf
+// https://elinux.org/RPi_Framebuffer
 
 //--------------------------------------------------------------------------------------------------
 // Private Definitions
@@ -23,13 +24,10 @@ use tock_registers::{
 register_bitfields! {u32,
     RD [
         // actual address
-        ADDR OFFSET(4) NUMBITS(28) [],
-
-        // channel
-        CH OFFSET(0) NUMBITS(4) [],
+        DATA OFFSET(4) NUMBITS(32) [],
     ],
 
-    RST [
+    ST [
         RD OFFSET(30) NUMBITS(2) [
             Full = 0b10,
             Empty = 0b01,
@@ -38,27 +36,19 @@ register_bitfields! {u32,
 
     WD [
         // actual address
-        ADDR OFFSET(4) NUMBITS(28) [],
-
-        // channel
-        CH OFFSET(0) NUMBITS(4) [],
-    ],
-
-    WST [
-        WD OFFSET(30) NUMBITS(2) [
-            Full = 0b10,
-            Empty = 0b01,
-        ],
+        DATA OFFSET(4) NUMBITS(32) [],
     ],
 }
 
 register_structs! {
+    #[allow(non_snake_case)]
     pub RegisterBlock {
-        (0x00 => RD: ReadWrite<u32, RD::Register>),
-        (0x18 => RST: ReadOnly<u32, RST::Register>),
-        (0x20 => WD: ReadWrite<u32, WD::Register>),
-        (0x38 => WST: ReadOnly<u32, WST::Register>),
-        (0x42 => @END),
+        (0x00 => RD: InMemoryRegister<u32, RD::Register>),
+        (0x04 => _reserved1),
+        (0x18 => ST: InMemoryRegister<u32, ST::Register>),
+        (0x1c => _reserved2),
+        (0x20 => WD: InMemoryRegister<u32, WD::Register>),
+        (0x24 => @END),
     }
 }
 
@@ -75,8 +65,8 @@ pub enum MailBoxError {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Messeage {
-    channel: u8,
-    data: u32,
+    pub channel: u8,
+    pub data: u32,
 }
 
 pub struct MailBoxInner {
@@ -105,40 +95,73 @@ impl MailBoxInner {
     }
 
     pub unsafe fn read_mailbox(
-        &mut self,
+        &self,
         ch: u8,
     ) -> Result<Messeage, MailBoxError> {
+        println!("Status register {:x}", self.registers.ST.get());
         loop {
             // busy loop until Read buffer is Full
-            while self.registers.RST.matches_all(RST::RD::Empty) {}
-
+            while self.registers.ST.matches_all(ST::RD::Empty) {
+                cpu::nop();
+            }
+            // println!("{:32b}, {}", self.registers.RD.get(), ch);
             // return if channel of recieved data is valid
-            if self.registers.RD.get() & 0x0F == ch as u32 {
-                let data = self.registers.RD.get();
+            if self.registers.RD.read(RD::DATA) & 0x0F == ch as u32 {
+                let data = self.registers.RD.read(RD::DATA) >> 4;
                 let channel = ch;
+                println!("end read mailbox: {:x}, {:x}", data, channel);
                 return Ok(Messeage { data, channel });
             }
         }
     }
 
     pub unsafe fn write_mailbox(
-        &mut self,
+        &self,
         msg: &Messeage,
     ) -> Result<(), MailBoxError> {
         // ptr is align of 16
-        if msg.data & 0x0f != 0 {
+        if msg.data & 0x0F != 0 {
             return Err(MailBoxError::NotAligned);
         }
 
         // busy loop until Write status buffer is empty
-        while self.registers.WST.matches_all(WST::WD::Full) {}
+        while self.registers.ST.matches_all(ST::RD::Full) {
+            cpu::nop();
+        }
 
+        println!("{:x}", msg.data + msg.channel as u32);
+        self.registers.WD.write(WD::DATA.val(1 as u32));
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x00) as *mut u32;
+        println!("raw RD: {:x}", core::ptr::read_volatile(ptr));
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x18) as *mut u32;
+        println!("raw ST: {:x}", core::ptr::read_volatile(ptr));
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
+        println!("raw WD: {:x}", core::ptr::read_volatile(ptr));
+
+        println!("raw write");
         // set mssage buffer address to Read regsiter of mailbox
-        self.registers.WD.write(WD::ADDR.val(msg.data >> 4));
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
+        core::ptr::write_volatile(ptr, 1);
 
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x00) as *mut u32;
+        println!("raw RD: {:x}", core::ptr::read_volatile(ptr));
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x18) as *mut u32;
+        println!("raw ST: {:x}", core::ptr::read_volatile(ptr));
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
+        println!("raw WD: {:x}", core::ptr::read_volatile(ptr));
+
+        println!("{}", msg.channel);
         // set channel to Read register of mailbox
-        self.registers.WD.write(WD::CH.val(msg.channel as u32));
 
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x00) as *mut u32;
+        println!("raw RD: {:x}", core::ptr::read_volatile(ptr));
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x18) as *mut u32;
+        println!("raw ST: {:x}", core::ptr::read_volatile(ptr));
+        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
+        println!("raw WD: {:x}", core::ptr::read_volatile(ptr));
+
+        cortex_a::asm::barrier::dsb(cortex_a::asm::barrier::SY);
+        println!("end write mailbox: {:x}", self.registers.WD.get());
         // busy loop
         Ok(())
     }
@@ -152,20 +175,16 @@ impl MailBox {
     }
 
     pub unsafe fn read_mailbox(
-        &mut self,
+        &self,
         ch: u8,
     ) -> Result<Messeage, MailBoxError> {
         self.inner.lock(|inner| inner.read_mailbox(ch))
     }
 
     pub unsafe fn write_mailbox(
-        &mut self,
+        &self,
         msg: &Messeage,
     ) -> Result<(), MailBoxError> {
         self.inner.lock(|inner| inner.write_mailbox(msg))
     }
 }
-
-//------------------------------------------------------------------------------
-// Global Instance
-//------------------------------------------------------------------------------

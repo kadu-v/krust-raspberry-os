@@ -1,14 +1,12 @@
 use crate::{
     bsp, memory,
-    memory::mmu::{translation_table::KernelTranslationTable, TranslationGranule},
+    memory::mmu::{
+        translation_table::KernelTranslationTable, TranslationGranule,
+    },
 };
 use core::intrinsics::unlikely;
 use cortex_a::{asm::barrier, registers::*};
-use tock_registers::{
-    interfaces::{ReadWriteable, Readable, Writeable},
-    register_bitfields,
-    registers::InMemoryRegister,
-};
+use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 //--------------------------------------------------------------------------------------------------
 // Private Definitions
@@ -35,7 +33,8 @@ pub mod mair {
 // Global instances
 //--------------------------------------------------------------------------------------------------
 
-static mut KERNEL_TABLES: KernelTranslationTable = KernelTranslationTable::new();
+static mut KERNEL_TABLES: KernelTranslationTable =
+    KernelTranslationTable::new();
 static MMU: MemoryManagementUnit = MemoryManagementUnit;
 
 //--------------------------------------------------------------------------------------------------
@@ -99,7 +98,9 @@ impl memory::mmu::interface::MMU for MemoryManagementUnit {
         }
 
         // 変換の粒度がサポートされていなければ、失敗させる
-        if unlikely(!ID_AA64MMFR0_EL1.matches_all(ID_AA64MMFR0_EL1::TGran64::Supported)) {
+        if unlikely(
+            !ID_AA64MMFR0_EL1.matches_all(ID_AA64MMFR0_EL1::TGran64::Supported),
+        ) {
             return Err(MMUEnableError::Other(
                 "Traslation granule not suported in HW",
             ));
@@ -123,7 +124,11 @@ impl memory::mmu::interface::MMU for MemoryManagementUnit {
 
         // MMUの有効化
         //
-        SCTLR_EL1.modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
+        SCTLR_EL1.modify(
+            SCTLR_EL1::M::Enable
+                + SCTLR_EL1::C::Cacheable
+                + SCTLR_EL1::I::Cacheable,
+        );
 
         barrier::isb(barrier::SY);
 

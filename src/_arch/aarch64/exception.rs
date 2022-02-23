@@ -1,4 +1,4 @@
-use core::{arch::global_asm, cell::UnsafeCell, default, fmt, panic};
+use core::{arch::global_asm, cell::UnsafeCell, fmt, panic};
 use cortex_a::{asm::barrier, registers::*};
 use tock_registers::{
     interfaces::{Readable, Writeable},

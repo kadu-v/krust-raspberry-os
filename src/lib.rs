@@ -15,6 +15,7 @@ pub mod driver;
 pub mod exception;
 pub mod memory;
 pub mod print;
+pub mod screen;
 pub mod time;
 
 //--------------------------------------------------------------------------------------------------

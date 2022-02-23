@@ -6,7 +6,7 @@ use crate::driver::{self, interface::DeviceDriver};
 
 // Device Driver Manager type
 struct BSPDriverManager {
-    device_drivers: [&'static (dyn DeviceDriver + Sync); 2],
+    device_drivers: [&'static (dyn DeviceDriver + Sync); 3],
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -14,7 +14,7 @@ struct BSPDriverManager {
 //--------------------------------------------------------------------------------------------------
 
 static BSP_DRIVER_MANAGER: BSPDriverManager = BSPDriverManager {
-    device_drivers: [&super::GPIO, &super::PL011_UART],
+    device_drivers: [&super::GPIO, &super::PL011_UART, &super::FRAMEBUFFER],
 };
 
 //--------------------------------------------------------------------------------------------------

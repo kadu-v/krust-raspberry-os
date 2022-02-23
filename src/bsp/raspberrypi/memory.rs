@@ -65,7 +65,7 @@ pub(super) mod map {
         pub const GPIO_START:       usize   = START + GPIO_OFFSET;
         pub const PL011_UART_START: usize   = START + UART_OFFSET;
         pub const END_INCLUSIVE:    usize   =         0x4000_FFFF;
-        pub const MAIBOX_START:     usize   = START + MAILBOX_OFFSET;
+        pub const MAILBOX_START:    usize   = START + MAILBOX_OFFSET;
     }
 
     #[cfg(feature = "bsp_rpi4")]
@@ -76,7 +76,7 @@ pub(super) mod map {
         pub const GPIO_START:       usize   = START + GPIO_OFFSET;
         pub const PL011_UART_START: usize   = START + UART_OFFSET;
         pub const END_INCLUSIVE:    usize   =         0xFF84_FFFF;
-        pub const MAIBOX_START:     usize   = START + MAILBOX_OFFSET;
+        pub const MAILBOX_START:    usize   = START + MAILBOX_OFFSET;
     }
 }
 
