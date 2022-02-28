@@ -13,8 +13,6 @@ use tock_registers::{
     registers::InMemoryRegister,
 };
 
-use self::STAGE1_PAGE_DESCRIPTOR::TYPE::Page;
-
 //--------------------------------------------------------------------------------------------------
 // Private Definitions
 //--------------------------------------------------------------------------------------------------
@@ -128,7 +126,8 @@ trait StartAddr {
     fn phys_start_addr_usize(&self) -> usize;
 }
 
-const NUM_LVL2_TABLES: usize = bsp::memory::mmu::KernelAddrSpace::SIZE >> Granule512MiB::SHIFT;
+const NUM_LVL2_TABLES: usize =
+    bsp::memory::mmu::KernelAddrSpace::SIZE >> Granule512MiB::SHIFT;
 
 //--------------------------------------------------------------------------------------------------
 // Public Definitions
@@ -174,11 +173,13 @@ impl TableDescriptor {
 
     // 次のレベルのテーブルディスクリプタを作成する
     pub fn from_next_lvl_table_addr(phys_next_lvl_table_addr: usize) -> Self {
-        let val = InMemoryRegister::<u64, STAGE1_TABLE_DESCRIPTOR::Register>::new(0);
+        let val =
+            InMemoryRegister::<u64, STAGE1_TABLE_DESCRIPTOR::Register>::new(0);
 
         let shifted = phys_next_lvl_table_addr >> Granule64KiB::SHIFT;
         val.write(
-            STAGE1_TABLE_DESCRIPTOR::NEXT_LEVEL_TABLE_ADDR_64KiB.val(shifted as u64)
+            STAGE1_TABLE_DESCRIPTOR::NEXT_LEVEL_TABLE_ADDR_64KiB
+                .val(shifted as u64)
                 + STAGE1_TABLE_DESCRIPTOR::TYPE::Table
                 + STAGE1_TABLE_DESCRIPTOR::VALID::True,
         );
@@ -189,17 +190,22 @@ impl TableDescriptor {
 
 // カーネルのメモリアトリビュートをハードウェアのMMUのアトリビュートに変換する
 impl convert::From<AttributeFields>
-    for tock_registers::fields::FieldValue<u64, STAGE1_PAGE_DESCRIPTOR::Register>
+    for tock_registers::fields::FieldValue<
+        u64,
+        STAGE1_PAGE_DESCRIPTOR::Register,
+    >
 {
     fn from(attribute_fields: AttributeFields) -> Self {
         let mut desc = match attribute_fields.mem_attributes {
             MemAttributes::CacheableDRAM => {
                 STAGE1_PAGE_DESCRIPTOR::SH::InnerShareable
-                    + STAGE1_PAGE_DESCRIPTOR::AttrIndx.val(memory::mmu::arch_mmu::mair::NORMAL)
+                    + STAGE1_PAGE_DESCRIPTOR::AttrIndx
+                        .val(memory::mmu::arch_mmu::mair::NORMAL)
             }
             MemAttributes::Device => {
                 STAGE1_PAGE_DESCRIPTOR::SH::OuterShareable
-                    + STAGE1_PAGE_DESCRIPTOR::AttrIndx.val(memory::mmu::arch_mmu::mair::DEVICE)
+                    + STAGE1_PAGE_DESCRIPTOR::AttrIndx
+                        .val(memory::mmu::arch_mmu::mair::DEVICE)
             }
         };
 
@@ -229,8 +235,12 @@ impl PageDescriptor {
         Self { value: 0 }
     }
 
-    pub fn from_output_addr(phys_output_addr: usize, attribute_fields: &AttributeFields) -> Self {
-        let val = InMemoryRegister::<u64, STAGE1_PAGE_DESCRIPTOR::Register>::new(0);
+    pub fn from_output_addr(
+        phys_output_addr: usize,
+        attribute_fields: &AttributeFields,
+    ) -> Self {
+        let val =
+            InMemoryRegister::<u64, STAGE1_PAGE_DESCRIPTOR::Register>::new(0);
 
         let shifted = phys_output_addr as u64 >> Granule64KiB::SHIFT;
         val.write(
@@ -260,16 +270,22 @@ impl<const NUM_TABLES: usize> FixedSizeTranslationTable<NUM_TABLES> {
 
     pub unsafe fn populate_tt_entries(&mut self) -> Result<(), &'static str> {
         for (l2_nr, l2_entry) in self.lvl2.iter_mut().enumerate() {
-            *l2_entry =
-                TableDescriptor::from_next_lvl_table_addr(self.lvl3[l2_nr].phys_start_addr_usize());
+            *l2_entry = TableDescriptor::from_next_lvl_table_addr(
+                self.lvl3[l2_nr].phys_start_addr_usize(),
+            );
 
             for (l3_nr, l3_entry) in self.lvl3[l2_nr].iter_mut().enumerate() {
-                let virt_addr = (l2_nr << Granule512MiB::SHIFT) + (l3_nr << Granule64KiB::SHIFT);
+                let virt_addr = (l2_nr << Granule512MiB::SHIFT)
+                    + (l3_nr << Granule64KiB::SHIFT);
 
                 let (phys_output_addr, attribute_fields) =
-                    bsp::memory::mmu::virt_mem_layout().virt_addr_properties(virt_addr)?;
+                    bsp::memory::mmu::virt_mem_layout()
+                        .virt_addr_properties(virt_addr)?;
 
-                *l3_entry = PageDescriptor::from_output_addr(phys_output_addr, &attribute_fields);
+                *l3_entry = PageDescriptor::from_output_addr(
+                    phys_output_addr,
+                    &attribute_fields,
+                );
             }
         }
         Ok(())

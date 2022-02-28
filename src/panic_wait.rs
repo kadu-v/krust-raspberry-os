@@ -1,7 +1,6 @@
 use crate::bsp;
 use crate::cpu;
 
-use crate::println;
 use core::fmt;
 use core::panic::PanicInfo;
 

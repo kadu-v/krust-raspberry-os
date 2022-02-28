@@ -3,13 +3,12 @@
 use core::marker::PhantomData;
 use core::ops;
 
-use crate::println;
 //-------------------------------------------------------------------------------------------------
 // Public Definitions
 //-------------------------------------------------------------------------------------------------
 
 pub struct MMIODerefWrapper<T> {
-    start_addr: usize,
+    pub start_addr: usize,
     phantom: PhantomData<fn() -> T>,
 }
 

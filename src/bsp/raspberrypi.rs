@@ -22,7 +22,7 @@ static MAILBOX: mailbox::MailBox =
     unsafe { mailbox::MailBox::new(memory::map::mmio::MAILBOX_START) };
 
 static FRAMEBUFFER: frame_buffer::FrameBuffer =
-    unsafe { frame_buffer::FrameBuffer::new() };
+    frame_buffer::FrameBuffer::new();
 
 //--------------------------------------------------------------------------------------------------
 // Public Code

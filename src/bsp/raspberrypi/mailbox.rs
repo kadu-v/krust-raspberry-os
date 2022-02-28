@@ -1,12 +1,12 @@
 use crate::{
-    bsp::{device_driver::common::MMIODerefWrapper, memory},
-    console, cpu, driver, print, println, synchronization,
+    bsp::device_driver::common::MMIODerefWrapper,
+    cpu,
     synchronization::{interface::Mutex, NullLock},
 };
 use tock_registers::{
-    interfaces::{ReadWriteable, Readable, Writeable},
+    interfaces::{Readable, Writeable},
     register_bitfields, register_structs,
-    registers::{InMemoryRegister, ReadOnly, ReadWrite, WriteOnly},
+    registers::{InMemoryRegister, ReadOnly},
 };
 
 // Descriptions taken from
@@ -22,33 +22,21 @@ use tock_registers::{
 
 // PL011 UART registers
 register_bitfields! {u32,
-    RD [
-        // actual address
-        DATA OFFSET(4) NUMBITS(32) [],
-    ],
-
-    ST [
-        RD OFFSET(30) NUMBITS(2) [
-            Full = 0b10,
-            Empty = 0b01,
-        ],
-    ],
-
-    WD [
-        // actual address
-        DATA OFFSET(4) NUMBITS(32) [],
+    STATUS [
+        EMPTY OFFSET(30) NUMBITS(1) [],
+        FULL OFFSET(31) NUMBITS(1) []
     ],
 }
-
+// 自動でフィールドのと型の整合性を計算して、padding?するので注意
 register_structs! {
     #[allow(non_snake_case)]
     pub RegisterBlock {
-        (0x00 => RD: InMemoryRegister<u32, RD::Register>),
-        (0x10 => _reserved1),
-        (0x18 => ST: InMemoryRegister<u32, ST::Register>),
+        (0x00 => READ: InMemoryRegister<u32>),
+        (0x04 => _reserved1),
+        (0x18 => STATUS: ReadOnly<u32, STATUS::Register>),
         (0x1c => _reserved2),
-        (0x20 => WD: InMemoryRegister<u32, WD::Register>),
-        (0x30 => @END),
+        (0x20 => WRITE: InMemoryRegister<u32>),
+        (0x24 => @END),
     }
 }
 
@@ -64,9 +52,10 @@ pub enum MailBoxError {
 //--------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy)]
+#[repr(C, align(16))]
 pub struct Messeage {
-    pub channel: u8,
-    pub data: u32,
+    pub data: [u32; 36],
+    pub channel: u32,
 }
 
 pub struct MailBoxInner {
@@ -82,8 +71,11 @@ pub struct MailBox {
 //--------------------------------------------------------------------------------------------------
 impl Messeage {
     // dataでアドレスを送るときは16byte境界にあラインされている必要がある
-    pub const unsafe fn new(data: u32, channel: u8) -> Self {
-        Self { data, channel }
+    pub const unsafe fn new(channel: u32) -> Self {
+        Self {
+            data: [0; 36],
+            channel,
+        }
     }
 }
 
@@ -94,83 +86,45 @@ impl MailBoxInner {
         }
     }
 
-    pub unsafe fn read_mailbox(
+    pub unsafe fn mailbox_call(
         &self,
-        ch: u8,
-    ) -> Result<Messeage, MailBoxError> {
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x00) as *mut u32;
-        println!("raw RD: {:x}", core::ptr::read_volatile(ptr));
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x18) as *mut u32;
-        println!("raw ST: {:x}", core::ptr::read_volatile(ptr));
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
-        println!("raw WD: {:x}", core::ptr::read_volatile(ptr));
-
-        println!("Status register {:b}", self.registers.ST.read(ST::RD));
-        loop {
-            // busy loop until Read buffer is Full
-            while self.registers.ST.matches_all(ST::RD::Empty) {
-                cpu::nop();
-            }
-            // println!("{:32b}, {}", self.registers.RD.get(), ch);
-            // return if channel of recieved data is valid
-            if self.registers.RD.read(RD::DATA) & 0x0F == ch as u32 {
-                let data = self.registers.RD.read(RD::DATA) >> 4;
-                let channel = ch;
-                println!("end read mailbox: {:x}, {:x}", data, channel);
-                return Ok(Messeage { data, channel });
-            }
-        }
-    }
-
-    pub unsafe fn write_mailbox(
-        &self,
-        msg: &Messeage,
+        msg: &mut Messeage,
     ) -> Result<(), MailBoxError> {
-        // ptr is align of 16
-        if msg.data & 0x0F != 0 {
+        let ptr = msg.data.as_ptr() as u32;
+
+        // Check alignment
+        if ptr & 0x0F != 0 {
             return Err(MailBoxError::NotAligned);
         }
 
-        // busy loop until Write status buffer is empty
-        while self.registers.ST.matches_all(ST::RD::Full) {
-            cpu::nop();
+        // mailbox interface
+        let data = (ptr | msg.channel) + 0xC000_0000;
+        let response = 0x8000_0000;
+
+        // wait until mailbox is empty
+        while self.registers.STATUS.matches_all(STATUS::FULL::SET) {
+            // wait here
         }
 
-        println!("{:x}", msg.data + msg.channel as u32);
-        self.registers.WD.write(WD::DATA.val(1 as u32));
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x00) as *mut u32;
-        println!("raw RD: {:x}", core::ptr::read_volatile(ptr));
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x18) as *mut u32;
-        println!("raw ST: {:x}", core::ptr::read_volatile(ptr));
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
-        println!("raw WD: {:x}", core::ptr::read_volatile(ptr));
+        // send a message via mailbox
+        self.registers.WRITE.set(data);
 
-        println!("raw write");
-        // set mssage buffer address to Read regsiter of mailbox
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
-        core::ptr::write_volatile(ptr, msg.data + 1 as u32 + 0x40000000);
+        // wait until messeage is sended
+        loop {
+            while self.registers.STATUS.matches_all(STATUS::EMPTY::SET) {
+                // wait here
+            }
 
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x00) as *mut u32;
-        println!("raw RD: {:x}", core::ptr::read_volatile(ptr));
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x18) as *mut u32;
-        println!("raw ST: {:x}", core::ptr::read_volatile(ptr));
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
-        println!("raw WD: {:x}", core::ptr::read_volatile(ptr));
+            let received_data = self.registers.READ.get();
 
-        println!("{}", msg.channel);
-        // set channel to Read register of mailbox
-
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x00) as *mut u32;
-        println!("raw RD: {:x}", core::ptr::read_volatile(ptr));
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x18) as *mut u32;
-        println!("raw ST: {:x}", core::ptr::read_volatile(ptr));
-        let ptr = (0x0000_B880 + 0x3F00_0000 + 0x20) as *mut u32;
-        println!("raw WD: {:x}", core::ptr::read_volatile(ptr));
-
-        cortex_a::asm::barrier::dsb(cortex_a::asm::barrier::SY);
-        println!("end write mailbox: {:x}", self.registers.WD.get());
-        // busy loop
-        Ok(())
+            if received_data == data {
+                // この呼び出しがないとmsg.data[1]の値が最適化で低数値にされる？
+                cpu::nop();
+                if msg.data[1] == response {
+                    return Ok(());
+                }
+            }
+        }
     }
 }
 
@@ -181,17 +135,10 @@ impl MailBox {
         }
     }
 
-    pub unsafe fn read_mailbox(
+    pub unsafe fn mailbox_call(
         &self,
-        ch: u8,
-    ) -> Result<Messeage, MailBoxError> {
-        self.inner.lock(|inner| inner.read_mailbox(ch))
-    }
-
-    pub unsafe fn write_mailbox(
-        &self,
-        msg: &Messeage,
+        msg: &mut Messeage,
     ) -> Result<(), MailBoxError> {
-        self.inner.lock(|inner| inner.write_mailbox(msg))
+        self.inner.lock(|mbox| mbox.mailbox_call(msg))
     }
 }

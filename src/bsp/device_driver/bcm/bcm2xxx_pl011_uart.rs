@@ -1,6 +1,6 @@
 use crate::{
-    bsp::device_driver::common::MMIODerefWrapper, console, cpu, driver, synchronization,
-    synchronization::NullLock,
+    bsp::device_driver::common::MMIODerefWrapper, console, cpu, driver,
+    synchronization, synchronization::NullLock,
 };
 use core::fmt;
 use tock_registers::{
@@ -203,7 +203,10 @@ impl PL011UartInner {
         }
     }
 
-    fn read_char_converting(&mut self, blocking_mode: BlockingMode) -> Option<char> {
+    fn read_char_converting(
+        &mut self,
+        blocking_mode: BlockingMode,
+    ) -> Option<char> {
         // 受信FIFOが空の場合
         if self.registers.FR.matches_all(FR::RXFE::SET) {
             // ノンブロッキングモードの場合は、即座にreturn
@@ -282,8 +285,9 @@ impl console::interface::Write for PL011Uart {
 impl console::interface::Read for PL011Uart {
     /// 受信FIFO(RX)から一文字を読み取る
     fn read_char(&self) -> char {
-        self.inner
-            .lock(|inner| inner.read_char_converting(BlockingMode::Blocking).unwrap())
+        self.inner.lock(|inner| {
+            inner.read_char_converting(BlockingMode::Blocking).unwrap()
+        })
     }
 
     /// 受信FIFO(RX)を空にする
