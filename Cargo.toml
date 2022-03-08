@@ -18,7 +18,7 @@ path = "src/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["bsp_rpi3"]
+default = ["bsp_rpi4"]
 bsp_rpi3 = ["tock-registers"]
 bsp_rpi4 = ["tock-registers"]
 bsp_rpi3ap = ["tock-registers"]
