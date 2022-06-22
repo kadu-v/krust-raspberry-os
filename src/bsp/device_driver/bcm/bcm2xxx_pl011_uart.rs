@@ -1,8 +1,9 @@
 use crate::{
-    bsp::device_driver::common::MMIODerefWrapper, console, cpu, driver,
-    synchronization, synchronization::NullLock,
+    bsp, bsp::device_driver::common::MMIODerefWrapper, console,
+    console::interface::All, cpu, driver, exception, synchronization,
+    synchronization::IRQSafeNullLock,
 };
-use core::fmt;
+use core::{fmt, future::pending};
 use tock_registers::{
     interfaces::{Readable, Writeable},
     register_bitfields, register_structs,
@@ -103,6 +104,43 @@ register_bitfields! {
         ],
     ],
 
+      /// Interrupt FIFO Level Select Register.
+      IFLS [
+        /// Receive interrupt FIFO level select. The trigger points for the receive interrupt are as
+        /// follows.
+        RXIFLSEL OFFSET(3) NUMBITS(5) [
+            OneEigth = 0b000,
+            OneQuarter = 0b001,
+            OneHalf = 0b010,
+            ThreeQuarters = 0b011,
+            SevenEights = 0b100
+        ]
+    ],
+
+    /// Interrupt Mask Set/Clear Register.
+    IMSC [
+
+        RTIM OFFSET(6) NUMBITS(1) [
+            Disabled = 0,
+            Enabled = 1
+        ],
+
+
+        RXIM OFFSET(4) NUMBITS(1) [
+            Disabled = 0,
+            Enabled = 1
+        ]
+    ],
+
+    /// Masked Interrupt Status Register.
+    MIS [
+
+        RTMIS OFFSET(6) NUMBITS(1) [],
+
+
+        RXMIS OFFSET(4) NUMBITS(1) []
+    ],
+
 
     // Integer Clear Register
     ICR [
@@ -121,7 +159,10 @@ register_structs! {
         (0x28 => FBRD: WriteOnly<u32, FBRD::Register>),
         (0x2c => LCR_H: WriteOnly<u32, LCR_H::Register>),
         (0x30 => CR: WriteOnly<u32, CR::Register>),
-        (0x34 => _reserved3),
+        (0x34 => IFLS: ReadWrite<u32, IFLS::Register>),
+        (0x38 => IMSC: ReadWrite<u32, IMSC::Register>),
+        (0x3C => _reserved3),
+        (0x40 => MIS: ReadOnly<u32, MIS::Register>),
         (0x44 => ICR: WriteOnly<u32, ICR::Register>),
         (0x48 => @END),
     }
@@ -150,7 +191,8 @@ pub use PL011UartInner as PanicUart;
 
 // Representation of the Uart
 pub struct PL011Uart {
-    inner: NullLock<PL011UartInner>,
+    inner: IRQSafeNullLock<PL011UartInner>,
+    irq_number: bsp::device_driver::IRQNumber,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -180,6 +222,14 @@ impl PL011UartInner {
         self.registers
             .LCR_H
             .write(LCR_H::WLEN::EightBit + LCR_H::FEN::FifosEnabled);
+
+        // Set RX FIFO fill level at 1/8.
+        self.registers.IFLS.write(IFLS::RXIFLSEL::OneEigth);
+
+        // Enable RX IRQ + RX timeout IRQ.
+        self.registers
+            .IMSC
+            .write(IMSC::RXIM::Enabled + IMSC::RTIM::Enabled);
 
         // Turn the Uart on
         self.registers
@@ -243,9 +293,15 @@ impl fmt::Write for PL011UartInner {
 }
 
 impl PL011Uart {
-    pub const unsafe fn new(mmio_start_addr: usize) -> Self {
+    pub const COMPATIBLE: &'static str = "BCM PL011 UART";
+
+    pub const unsafe fn new(
+        mmio_start_addr: usize,
+        irq_number: bsp::device_driver::IRQNumber,
+    ) -> Self {
         Self {
-            inner: NullLock::new(PL011UartInner::new(mmio_start_addr)),
+            inner: IRQSafeNullLock::new(PL011UartInner::new(mmio_start_addr)),
+            irq_number,
         }
     }
 }
@@ -263,6 +319,22 @@ impl driver::interface::DeviceDriver for PL011Uart {
 
     unsafe fn init(&self) -> Result<(), &'static str> {
         self.inner.lock(|inner| inner.init());
+
+        Ok(())
+    }
+
+    fn register_and_enable_irq_handler(
+        &'static self,
+    ) -> Result<(), &'static str> {
+        use exception::asynchronous::{irq_manager, IRQDescriptor};
+
+        let descriptor = IRQDescriptor {
+            name: Self::COMPATIBLE,
+            handler: self,
+        };
+
+        irq_manager().register_handler(self.irq_number, descriptor)?;
+        irq_manager().enable(self.irq_number);
 
         Ok(())
     }
@@ -308,5 +380,27 @@ impl console::interface::Statistics for PL011Uart {
 
     fn chars_read(&self) -> usize {
         self.inner.lock(|inner| inner.chars_read)
+    }
+}
+
+impl console::interface::All for PL011Uart {}
+
+impl exception::asynchronous::interface::IRQHandler for PL011Uart {
+    fn handle(&self) -> Result<(), &'static str> {
+        self.inner.lock(|inner| {
+            let pending = inner.registers.MIS.extract();
+
+            inner.registers.ICR.write(ICR::ALL::CLEAR);
+
+            if pending.matches_any(MIS::RXMIS::SET + MIS::RTMIS::SET) {
+                while let Some(c) =
+                    inner.read_char_converting(BlockingMode::NonBlocking)
+                {
+                    inner.write_char(c)
+                }
+            }
+        });
+
+        Ok(())
     }
 }

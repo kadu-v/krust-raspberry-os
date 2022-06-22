@@ -22,5 +22,5 @@ pub unsafe fn panic_console_out() -> impl fmt::Write {
 
 // Return a reference to the console
 pub fn console() -> &'static impl console::interface::All {
-    &super::PL011_UART
+    &super::driver::PL011_UART
 }

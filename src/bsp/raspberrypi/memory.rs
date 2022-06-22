@@ -62,10 +62,11 @@ pub(super) mod map {
         use super::*;
 
         pub const START:            usize   =         0x3F00_0000;
+        pub const PERIPHERAL_INTERRUPT_CONTROLLER_START: usize = START + 0x0000_B200;
         pub const GPIO_START:       usize   = START + GPIO_OFFSET;
         pub const PL011_UART_START: usize   = START + UART_OFFSET;
-        pub const END_INCLUSIVE:    usize   =         0x4000_FFFF;
         pub const MAILBOX_START:    usize   = START + MAILBOX_OFFSET;
+        pub const END_INCLUSIVE:    usize   =         0x4000_FFFF;
     }
 
     #[cfg(feature = "bsp_rpi4")]
@@ -75,8 +76,10 @@ pub(super) mod map {
         pub const START:            usize   =         0xFE00_0000;
         pub const GPIO_START:       usize   = START + GPIO_OFFSET;
         pub const PL011_UART_START: usize   = START + UART_OFFSET;
-        pub const END_INCLUSIVE:    usize   =         0xFF84_FFFF;
+        pub const GICD_START:       usize =           0xFF84_1000;
+        pub const GICC_START:       usize =           0xFF84_2000;
         pub const MAILBOX_START:    usize   = START + MAILBOX_OFFSET;
+        pub const END_INCLUSIVE:    usize   =         0xFF84_FFFF;
     }
 }
 

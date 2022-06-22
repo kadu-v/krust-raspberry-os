@@ -13,6 +13,12 @@ pub mod interface {
         unsafe fn init(&self) -> Result<(), &'static str> {
             Ok(())
         }
+
+        fn register_and_enable_irq_handler(
+            &'static self,
+        ) -> Result<(), &'static str> {
+            Ok(())
+        }
     }
 
     // Device driver managment functions

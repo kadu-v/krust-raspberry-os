@@ -1,0 +1,26 @@
+<!-- 13_exceptions_part2_peripheral_IRQs/src/_arch/aarch64/cpu/smp.rs -->
+13_exceptions_part2_peripheral_IRQs/src/_arch/aarch64/exception/asynchronous.rs
+13_exceptions_part2_peripheral_IRQs/src/_arch/aarch64/exception.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/device_driver/arm/gicv2/gicc.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/device_driver/arm/gicv2/gicd.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/device_driver/arm/gicv2.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/device_driver/arm.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/device_driver/bcm/bcm2xxx_gpio.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/device_driver/bcm/bcm2xxx_interrupt_controller/peripheral_ic.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/device_driver/bcm/bcm2xxx_interrupt_controller.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/device_driver/bcm/bcm2xxx_pl011_uart.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/device_driver/bcm.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/device_driver.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/raspberrypi/exception/asynchronous.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/raspberrypi/exception.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/raspberrypi/memory.rs
+13_exceptions_part2_peripheral_IRQs/src/bsp/raspberrypi.rs
+<!-- 13_exceptions_part2_peripheral_IRQs/src/cpu/smp.rs -->
+<!-- 13_exceptions_part2_peripheral_IRQs/src/cpu.rs -->
+13_exceptions_part2_peripheral_IRQs/src/driver.rs
+13_exceptions_part2_peripheral_IRQs/src/exception/asynchronous.rs
+13_exceptions_part2_peripheral_IRQs/src/lib.rs
+13_exceptions_part2_peripheral_IRQs/src/main.rs
+13_exceptions_part2_peripheral_IRQs/src/state.rs
+13_exceptions_part2_peripheral_IRQs/src/synchronization.rs
+13_exceptions_part2_peripheral_IRQs/tests/03_exception_irq_sanity.rs

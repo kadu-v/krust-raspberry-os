@@ -5,6 +5,8 @@
 #![feature(const_fn_fn_ptr_basics)]
 #![feature(format_args_nl)]
 #![feature(core_intrinsics)]
+#![feature(asm_const)]
+#![feature(linkage)]
 mod panic_wait;
 mod synchronization;
 
@@ -16,6 +18,7 @@ pub mod exception;
 pub mod memory;
 pub mod print;
 pub mod screen;
+pub mod state;
 pub mod time;
 
 //--------------------------------------------------------------------------------------------------

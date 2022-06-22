@@ -1,10 +1,11 @@
 //! https://github.com/RaspberryPI/firmware/wiki/Mailbox-framebuffer-interface
 
-use crate::synchronization::{interface::Mutex, NullLock};
+use crate::synchronization::{interface::Mutex, IRQSafeNullLock};
 
 use crate::{driver, println, screen};
 
-use super::{mailbox::*, MAILBOX};
+use super::driver::{FRAMEBUFFER, MAILBOX};
+use super::mailbox::*;
 
 //--------------------------------------------------------------------------------------------------
 // Public Definitions
@@ -25,7 +26,7 @@ pub struct FrameBufferInner {
 }
 
 pub struct FrameBuffer {
-    inner: NullLock<FrameBufferInner>,
+    inner: IRQSafeNullLock<FrameBufferInner>,
 }
 
 // #[derive(Debug, Clone, Copy)]
@@ -140,7 +141,7 @@ impl FrameBufferInner {
 impl FrameBuffer {
     pub const fn new() -> Self {
         Self {
-            inner: NullLock::new(FrameBufferInner::new()),
+            inner: IRQSafeNullLock::new(FrameBufferInner::new()),
         }
     }
 
@@ -170,5 +171,5 @@ impl screen::interface::Write for FrameBuffer {
 }
 
 pub fn screen() -> &'static impl screen::interface::All {
-    &super::FRAMEBUFFER
+    &FRAMEBUFFER
 }

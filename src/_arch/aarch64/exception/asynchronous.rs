@@ -1,9 +1,14 @@
-use cortex_a::registers::*;
-use tock_registers::interfaces::Readable;
+use core::arch::asm;
+use cortex_a::{asm, registers::*};
+use tock_registers::interfaces::{Readable, Writeable};
 
 //--------------------------------------------------------------------------------------------------
 // Private Definitions
 //--------------------------------------------------------------------------------------------------
+
+mod daif_bits {
+    pub const IRQ: u8 = 0b0010;
+}
 
 trait DaifField {
     fn daif_field() -> tock_registers::fields::Field<u64, DAIF::Register>;
@@ -51,7 +56,46 @@ fn is_masked<T: DaifField>() -> bool {
 // Public Code
 //--------------------------------------------------------------------------------------------------
 
-// #[rustfmt::skip]
+pub fn is_local_irq_masked() -> bool {
+    !is_masked::<IRQ>()
+}
+
+#[inline(always)]
+pub fn local_irq_unmask() {
+    unsafe {
+        asm!(
+            "msr DAIFClr, {arg}",
+            arg = const daif_bits::IRQ,
+            options(nomem, nostack, preserves_flags)
+        )
+    }
+}
+
+#[inline(always)]
+pub fn local_irq_mask() {
+    unsafe {
+        asm!(
+            "msr DAIFSet, {arg}",
+            arg = const daif_bits::IRQ,
+            options(nomem, nostack, preserves_flags)
+        )
+    }
+}
+
+#[inline(always)]
+pub fn local_irq_mask_save() -> u64 {
+    let saved = DAIF.get();
+    local_irq_mask();
+
+    saved
+}
+
+#[inline(always)]
+pub fn local_irq_restore(saved: u64) {
+    DAIF.set(saved);
+}
+
+#[rustfmt::skip]
 pub fn print_state() {
     use crate::info;
 

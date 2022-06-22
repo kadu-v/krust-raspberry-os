@@ -30,5 +30,5 @@ pub mod interface {
         }
     }
 
-    pub trait All = Read + Write + Statistics;
+    pub trait All: Read + Write + Statistics {}
 }

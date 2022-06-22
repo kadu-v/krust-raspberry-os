@@ -2,11 +2,12 @@
 #![no_main]
 #![no_std]
 
+use exception::asynchronous::interface::IRQManager;
 use libkernel::{
     bsp::{self, frame_buffer::screen},
     driver, exception, info, memory, print, println,
     screen::interface::Write,
-    time,
+    state, time, warn,
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -15,11 +16,11 @@ use libkernel::{
 #[no_mangle]
 unsafe fn kernel_init() -> ! {
     use driver::interface::{DeviceDriver, DriverManager};
-    // use memory::mmu::interface::MMU;
+    use memory::mmu::interface::MMU;
 
-    // if let Err(string) = memory::mmu::mmu().enable_mmu_and_caching() {
-    //     panic!("MMU: {}", string);
-    // }
+    if let Err(string) = memory::mmu::mmu().enable_mmu_and_caching() {
+        panic!("MMU: {}", string);
+    }
 
     exception::handling_init();
 
@@ -36,6 +37,19 @@ unsafe fn kernel_init() -> ! {
     bsp::driver::driver_manager().post_device_driver_init();
     // println! is usable from here on
     // Trasmit from unsafe to safe
+
+    // Let device drivers register and enable their handlers with the interrupt controller.
+    for i in bsp::driver::driver_manager().all_device_drivers() {
+        if let Err(msg) = i.register_and_enable_irq_handler() {
+            warn!("Error registering IRQ handler: {}", msg);
+        }
+    }
+
+    // Unmask interrupts on the boot CPU core.
+    exception::asynchronous::local_irq_unmask();
+
+    // Announce conclusion of the kernel_init() phase.
+    state::state_manager().transition_to_single_core_main();
     kernel_main();
 }
 
@@ -70,6 +84,9 @@ fn kernel_main() -> ! {
     {
         info!("      {}. {}", i + 1, driver.compatible());
     }
+
+    info!("Registered IRQ handlers:");
+    bsp::exception::asynchronous::irq_manager().print_handler();
 
     // Test a failing timer case.
     time::time_manager().spin_for(Duration::from_nanos(1));

@@ -3,7 +3,7 @@
 use crate::{
     bsp::device_driver::common::MMIODerefWrapper,
     driver,
-    synchronization::{interface::Mutex, NullLock},
+    synchronization::{interface::Mutex, IRQSafeNullLock},
 };
 use tock_registers::{
     interfaces::{ReadWriteable, Writeable},
@@ -113,7 +113,7 @@ pub use GPIOInner as PanicGPIO;
 
 // Representation of the GPIO HW
 pub struct GPIO {
-    inner: NullLock<GPIOInner>,
+    inner: IRQSafeNullLock<GPIOInner>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -140,9 +140,9 @@ impl GPIOInner {
         self.registers.GPPUD.write(GPPUD::PUD::Off);
         time::time_manager().spin_for(DELAY);
 
-        self.registers
-            .GPPUDLK0
-            .write(GPPUDLK0::PUDLC15::AssertClock + GPPUDLK0::PUDLC14::AssertClock);
+        self.registers.GPPUDLK0.write(
+            GPPUDLK0::PUDLC15::AssertClock + GPPUDLK0::PUDLC14::AssertClock,
+        );
         time::time_manager().spin_for(DELAY);
 
         self.registers.GPPUD.write(GPPUD::PUD::Off);
@@ -176,7 +176,7 @@ impl GPIO {
     // Create an instance
     pub const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
-            inner: NullLock::new(GPIOInner::new(mmio_start_addr)),
+            inner: IRQSafeNullLock::new(GPIOInner::new(mmio_start_addr)),
         }
     }
 

@@ -1,7 +1,7 @@
 use crate::{
     bsp::device_driver::common::MMIODerefWrapper,
-    cpu,
-    synchronization::{interface::Mutex, NullLock},
+    cpu, println,
+    synchronization::{interface::Mutex, IRQSafeNullLock},
 };
 use tock_registers::{
     interfaces::{Readable, Writeable},
@@ -63,7 +63,7 @@ pub struct MailBoxInner {
 }
 
 pub struct MailBox {
-    inner: NullLock<MailBoxInner>,
+    inner: IRQSafeNullLock<MailBoxInner>,
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ impl MailBoxInner {
 impl MailBox {
     pub const unsafe fn new(mmio_start_addr: usize) -> Self {
         Self {
-            inner: NullLock::new(MailBoxInner::new(mmio_start_addr)),
+            inner: IRQSafeNullLock::new(MailBoxInner::new(mmio_start_addr)),
         }
     }
 
