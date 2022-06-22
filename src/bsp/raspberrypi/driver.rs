@@ -39,13 +39,12 @@ pub(super) static INTERRUPT_CONTROLLER: device_driver::GICv2 =
 pub(super) static FRAMEBUFFER: frame_buffer::FrameBuffer =
     frame_buffer::FrameBuffer::new();
 
-static BSP_DRIVER_MANAGER: BSPDriverManager = BSPDriverManager {
-    device_drivers: [&PL011_UART, &GPIO, &FRAMEBUFFER, &INTERRUPT_CONTROLLER],
-};
-
 pub(super) static MAILBOX: super::mailbox::MailBox =
     unsafe { super::mailbox::MailBox::new(mmio::MAILBOX_START) };
 
+static BSP_DRIVER_MANAGER: BSPDriverManager = BSPDriverManager {
+    device_drivers: [&PL011_UART, &GPIO, &FRAMEBUFFER, &INTERRUPT_CONTROLLER],
+};
 //--------------------------------------------------------------------------------------------------
 // Pubilic Code
 //--------------------------------------------------------------------------------------------------
