@@ -5,7 +5,7 @@
 use exception::asynchronous::interface::IRQManager;
 use libkernel::{
     bsp::{self, frame_buffer::screen},
-    driver, exception, info, memory, print, println,
+    driver, exception, info, memory,
     screen::interface::Write,
     state, time, warn,
 };
@@ -15,7 +15,7 @@ use libkernel::{
 //-------------------------------------------------------------------------------------------------
 #[no_mangle]
 unsafe fn kernel_init() -> ! {
-    use driver::interface::{DeviceDriver, DriverManager};
+    use driver::interface::DriverManager;
     use memory::mmu::interface::MMU;
 
     if let Err(string) = memory::mmu::mmu().enable_mmu_and_caching() {

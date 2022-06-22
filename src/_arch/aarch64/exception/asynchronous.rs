@@ -1,5 +1,5 @@
 use core::arch::asm;
-use cortex_a::{asm, registers::*};
+use cortex_a::registers::*;
 use tock_registers::interfaces::{Readable, Writeable};
 
 //--------------------------------------------------------------------------------------------------

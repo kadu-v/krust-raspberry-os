@@ -1,7 +1,5 @@
 mod peripheral_ic;
 
-use cortex_a::registers::DAIF::I;
-
 use crate::{driver, exception};
 
 //--------------------------------------------------------------------------------------------------

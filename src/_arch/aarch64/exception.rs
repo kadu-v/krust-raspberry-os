@@ -1,4 +1,3 @@
-use crate::exception;
 use core::{arch::global_asm, cell::UnsafeCell, fmt, panic};
 use cortex_a::{asm::barrier, registers::*};
 use tock_registers::{
@@ -83,7 +82,7 @@ extern "C" fn current_elx_synchronous(e: &mut ExceptionContext) {
 }
 
 #[no_mangle]
-extern "C" fn current_elx_irq(e: &mut ExceptionContext) {
+extern "C" fn current_elx_irq(_e: &mut ExceptionContext) {
     // let token = unsafe { &exception::asynchronous::IRQContext::new() };
     // exception::asynchronous::irq_manager().handle_pending_irq(token);
 }

@@ -1,6 +1,6 @@
 use crate::{
     bsp::device_driver::common::MMIODerefWrapper,
-    cpu, println,
+    cpu,
     synchronization::{interface::Mutex, IRQSafeNullLock},
 };
 use tock_registers::{

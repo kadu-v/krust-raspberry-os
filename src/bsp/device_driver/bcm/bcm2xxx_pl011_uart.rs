@@ -1,9 +1,8 @@
 use crate::{
-    bsp, bsp::device_driver::common::MMIODerefWrapper, console,
-    console::interface::All, cpu, driver, exception, synchronization,
-    synchronization::IRQSafeNullLock,
+    bsp, bsp::device_driver::common::MMIODerefWrapper, console, cpu, driver,
+    exception, synchronization, synchronization::IRQSafeNullLock,
 };
-use core::{fmt, future::pending};
+use core::fmt;
 use tock_registers::{
     interfaces::{Readable, Writeable},
     register_bitfields, register_structs,

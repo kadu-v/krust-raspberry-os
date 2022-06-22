@@ -2,7 +2,7 @@
 
 use crate::synchronization::{interface::Mutex, IRQSafeNullLock};
 
-use crate::{driver, println, screen};
+use crate::{driver, screen};
 
 use super::driver::{FRAMEBUFFER, MAILBOX};
 use super::mailbox::*;
