@@ -9,6 +9,9 @@ use libkernel::{
     screen::interface::Write,
     state, time, warn,
 };
+use noto_sans_mono_bitmap::{
+    get_bitmap, get_bitmap_width, BitmapHeight, FontWeight,
+};
 
 //-------------------------------------------------------------------------------------------------
 // Kernel code
@@ -91,11 +94,36 @@ fn kernel_main() -> ! {
     // Test a failing timer case.
     time::time_manager().spin_for(Duration::from_nanos(1));
 
-    for i in 0..100 {
-        for j in 0..100 {
-            screen().draw(i, j, 0b11111_000000_00000);
+    // print font to screen
+    let width = get_bitmap_width(FontWeight::Regular, BitmapHeight::Size64);
+    info!(
+        "Each char of the mono-spaced font will be {}px in width if the font \
+         weight={:?} and the bitmap height={}",
+        width,
+        FontWeight::Regular,
+        BitmapHeight::Size64.val()
+    );
+    let bitmap_char =
+        get_bitmap('A', FontWeight::Regular, BitmapHeight::Size64)
+            .expect("unsupported char");
+    info!("{:?}", bitmap_char);
+    for (row_i, row) in bitmap_char.bitmap().iter().enumerate() {
+        for (col_i, intensity) in row.iter().enumerate() {
+            let (r, g, b) =
+                (*intensity as u32, *intensity as u32, *intensity as u32);
+            let (r, g, b) = (255 - r, 255 - g, 255 - b);
+            // let rgb_32 = /*0 << 24 | */r << 11 | g << 6 | b;
+            let rgb_32 = /*0 << 24 | */r << 16 | g << 8 | b;
+            screen().draw(col_i, row_i, rgb_32);
+            info!("r: {}, g: {}, b: {}", r, g, b);
         }
     }
+
+    // for i in 0..100 {
+    //     for j in 0..100 {
+    //         screen().draw(i, j, 0b11111_000000_00000);
+    //     }
+    // }
     loop {
         info!("Spinning for 1 second");
         time::time_manager().spin_for(Duration::from_secs(1));

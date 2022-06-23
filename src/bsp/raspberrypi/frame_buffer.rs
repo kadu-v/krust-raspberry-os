@@ -29,12 +29,16 @@ pub struct FrameBuffer {
     inner: IRQSafeNullLock<FrameBufferInner>,
 }
 
-// #[derive(Debug, Clone, Copy)]
-// pub struct Rgb {
-//     r: u32,
-//     g: u32,
-//     b: u32,
-// }
+// RGB:
+//              R         G       B
+// |--------|--------|--------|--------|
+//               5        6       5
+#[derive(Debug, Clone, Copy)]
+pub struct Rgb {
+    r: u32, // 5bit
+    g: u32, // 6bit
+    b: u32, // 5bit
+}
 
 // pub enum Color {
 //     Yellow = ,
@@ -52,7 +56,7 @@ impl FrameBufferInner {
             width: 640,
             heigth: 480,
             pitch: 0,
-            depth: 16,
+            depth: 32,
             _x_offset: 0,
             _y_offset: 0,
             addr: 0,
@@ -127,11 +131,11 @@ impl FrameBufferInner {
         msg.data[25] = 0;
     }
 
-    pub fn draw(&self, x: usize, y: usize, c: u16) {
+    pub fn draw(&self, x: usize, y: usize, c: u32) {
         // self.depth + 7は下位４bitを繰り上げている
         let ptr = (self.addr
             + y as u32 * self.pitch
-            + x as u32 * ((self.depth + 7) >> 3)) as *mut u16;
+            + x as u32 * ((self.depth + 7) >> 3)) as *mut u32;
         unsafe {
             core::ptr::write_volatile(ptr, c);
         }
@@ -145,8 +149,8 @@ impl FrameBuffer {
         }
     }
 
-    pub fn draw(&self, x: usize, y: usize, c: usize) {
-        self.inner.lock(|buff| buff.draw(x, y, c as u16))
+    pub fn draw(&self, x: usize, y: usize, c: u32) {
+        self.inner.lock(|buff| buff.draw(x, y, c as u32))
     }
 }
 
@@ -165,7 +169,7 @@ impl driver::interface::DeviceDriver for FrameBuffer {
 }
 
 impl screen::interface::Write for FrameBuffer {
-    fn draw(&self, x: usize, y: usize, c: usize) {
+    fn draw(&self, x: usize, y: usize, c: u32) {
         self.draw(x, y, c);
     }
 }
