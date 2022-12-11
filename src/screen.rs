@@ -1,7 +1,9 @@
 pub mod interface {
+    pub use core::fmt;
     pub trait Write {
-        fn draw(&self, x: usize, y: usize, c: u32);
+        fn write_fmt(&self, args: fmt::Arguments) -> fmt::Result;
+        fn write_string(&mut self, s: &str);
     }
 
-    pub trait All = Write;
+    pub trait All: Write {}
 }

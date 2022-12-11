@@ -53,7 +53,7 @@ pub enum MailBoxError {
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C, align(16))]
-pub struct Messeage {
+pub struct Messege {
     pub data: [u32; 36],
     pub channel: u32,
 }
@@ -69,7 +69,7 @@ pub struct MailBox {
 //--------------------------------------------------------------------------------------------------
 // Public Code
 //--------------------------------------------------------------------------------------------------
-impl Messeage {
+impl Messege {
     // dataでアドレスを送るときは16byte境界にあラインされている必要がある
     pub const unsafe fn new(channel: u32) -> Self {
         Self {
@@ -88,7 +88,7 @@ impl MailBoxInner {
 
     pub unsafe fn mailbox_call(
         &self,
-        msg: &mut Messeage,
+        msg: &mut Messege,
     ) -> Result<(), MailBoxError> {
         let ptr = msg.data.as_ptr() as u32;
 
@@ -118,7 +118,8 @@ impl MailBoxInner {
             let received_data = self.registers.READ.get();
 
             if received_data == data {
-                // この呼び出しがないとmsg.data[1]の値が最適化で低数値にされる？
+                // この呼び出しがないとmsg.data[1]の値が最適化で定数値にされる？
+                cpu::nop();
                 cpu::nop();
                 if msg.data[1] == response {
                     return Ok(());
@@ -137,7 +138,7 @@ impl MailBox {
 
     pub unsafe fn mailbox_call(
         &self,
-        msg: &mut Messeage,
+        msg: &mut Messege,
     ) -> Result<(), MailBoxError> {
         self.inner.lock(|mbox| mbox.mailbox_call(msg))
     }

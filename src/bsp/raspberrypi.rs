@@ -5,6 +5,7 @@ pub mod exception;
 pub mod frame_buffer;
 pub mod mailbox;
 pub mod memory;
+pub mod screen_writer;
 
 //--------------------------------------------------------------------------------------------------
 // Public Code

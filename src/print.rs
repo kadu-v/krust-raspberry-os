@@ -1,4 +1,4 @@
-use crate::{bsp, console};
+use crate::{bsp, console, screen};
 use core::fmt;
 
 //-------------------------------------------------------------------------------------------------
@@ -11,8 +11,16 @@ pub fn _print(args: fmt::Arguments) {
 
     bsp::console::console()
         .write_fmt(args)
-        .expect("print panic");
+        .expect("console print panic!!");
 }
+
+// pub fn _screen_print(args: fmt::Arguments) {
+//     use screen::interface::Write;
+
+//     bsp::frame_buffer::screen_writer()
+//         .write_fmt(args)
+//         .expect("screen print panic!!")
+// }
 
 #[macro_export]
 macro_rules! print {

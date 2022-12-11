@@ -1,5 +1,10 @@
-use super::{exception, frame_buffer, memory::map::mmio};
-use crate::{bsp::device_driver, driver};
+use super::{
+    exception,
+    frame_buffer::{self},
+    memory::map::mmio,
+    screen_writer::ScreenWriter,
+};
+use crate::{bsp::device_driver, driver, screen};
 pub use device_driver::IRQNumber;
 use driver::interface::DeviceDriver;
 
@@ -36,7 +41,7 @@ pub(super) static INTERRUPT_CONTROLLER: device_driver::InterruptController = uns
 pub(super) static INTERRUPT_CONTROLLER: device_driver::GICv2 =
     unsafe { device_driver::GICv2::new(mmio::GICD_START, mmio::GICC_START) };
 
-pub(super) static FRAMEBUFFER: frame_buffer::FrameBuffer =
+pub static FRAMEBUFFER: frame_buffer::FrameBuffer =
     frame_buffer::FrameBuffer::new();
 
 pub(super) static MAILBOX: super::mailbox::MailBox =
@@ -45,6 +50,7 @@ pub(super) static MAILBOX: super::mailbox::MailBox =
 static BSP_DRIVER_MANAGER: BSPDriverManager = BSPDriverManager {
     device_drivers: [&PL011_UART, &GPIO, &FRAMEBUFFER, &INTERRUPT_CONTROLLER],
 };
+
 //--------------------------------------------------------------------------------------------------
 // Pubilic Code
 //--------------------------------------------------------------------------------------------------

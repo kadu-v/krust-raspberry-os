@@ -22,6 +22,7 @@ fn _panic_exit() -> ! {
     }
 }
 
+#[allow(dead_code)]
 fn panic_prevent_reenter() {
     use core::sync::atomic::{AtomicBool, Ordering};
 
