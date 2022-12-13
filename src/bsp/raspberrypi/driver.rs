@@ -2,9 +2,8 @@ use super::{
     exception,
     frame_buffer::{self},
     memory::map::mmio,
-    screen_writer::ScreenWriter,
 };
-use crate::{bsp::device_driver, driver, screen};
+use crate::{bsp::device_driver, driver};
 pub use device_driver::IRQNumber;
 use driver::interface::DeviceDriver;
 

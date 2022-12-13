@@ -4,12 +4,8 @@
 
 use exception::asynchronous::interface::IRQManager;
 use libkernel::{
-    bsp::screen_writer,
-    bsp::{
-        self, driver::FRAMEBUFFER, frame_buffer::RGBColor,
-        screen_writer::ScreenWriter,
-    },
-    driver, exception, info, memory, print, println,
+    bsp::{self, driver::FRAMEBUFFER, frame_buffer::RGBColor},
+    buffer_println, driver, exception, info, memory, print, println,
     screen::interface::Write,
     state, time, warn,
 };
@@ -99,16 +95,18 @@ fn kernel_main() -> ! {
     // Test a failing timer case.
     time::time_manager().spin_for(Duration::from_nanos(1));
 
-    let mut writer = ScreenWriter::new();
-    let mut b = true;
-    loop {
-        info!("Spinning for 1 second");
-        time::time_manager().spin_for(Duration::from_secs(1));
-        b = !b;
-        for x in 0..(1024 / 8) {
-            writer.write_char('A');
-        }
-    }
+    // let mut b = true;
+    // loop {
+    //     info!("Spinning for 1 second");
+    //     time::time_manager().spin_for(Duration::from_secs(1));
+    //     b = !b;
+
+    //     for b in ['A', 'B'] {
+    //         for x in 0..(1023 / 8) {
+    //             buffer_println!("hi");
+    //         }
+    //     }
+    // }
 
     loop {
         info!("Spinning for 1 second");

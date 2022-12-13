@@ -5,33 +5,33 @@ use core::fmt;
 // Public Deginitions
 //-------------------------------------------------------------------------------------------------
 
+// #[doc(hidden)]
+// pub fn _print(args: fmt::Arguments) {
+//     use console::interface::Write;
+
+//     bsp::console::console()
+//         .write_fmt(args)
+//         .expect("console print panic!!");
+// }
+
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
-    use console::interface::Write;
-
-    bsp::console::console()
+    use screen::interface::Write;
+    bsp::frame_buffer::screen()
         .write_fmt(args)
-        .expect("console print panic!!");
+        .expect("screen print panic!!")
 }
-
-// pub fn _screen_print(args: fmt::Arguments) {
-//     use screen::interface::Write;
-
-//     bsp::frame_buffer::screen_writer()
-//         .write_fmt(args)
-//         .expect("screen print panic!!")
-// }
 
 #[macro_export]
 macro_rules! print {
-    ($($arg:tt)*) => ($crate::print::_print(format_args!($($arg)*)));
+    ($($arg:tt)*) => ($crate::print::_screen_print(format_args!($($arg)*)));
 }
 
 #[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));
     ($($arg:tt)*) => {
-        $crate::print!("{}\n", format_args!($($arg)*));
+        $crate::screen_print!("{}\n", format_args!($($arg)*));
     };
 }
 
@@ -101,4 +101,25 @@ macro_rules! warn {
             $($arg)*
         ));
     })
+}
+
+#[doc(hidden)]
+pub fn _buffer_print(args: fmt::Arguments) {
+    use screen::interface::Write;
+    bsp::frame_buffer::screen()
+        .write_fmt(args)
+        .expect("screen print panic!!")
+}
+
+#[macro_export]
+macro_rules! buffer_print {
+    ($($arg:tt)*) => ($crate::print::_buffer_print(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! buffer_println {
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => {
+        $crate::buffer_print!("{}\n", format_args!($($arg)*));
+    };
 }

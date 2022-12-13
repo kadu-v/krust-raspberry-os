@@ -1,9 +1,10 @@
 //! https://github.com/RaspberryPI/firmware/wiki/Mailbox-framebuffer-interface
 
-use super::driver::MAILBOX;
+use super::driver::{FRAMEBUFFER, MAILBOX};
 use super::mailbox::*;
+use crate::screen;
 use crate::synchronization::{interface::Mutex, IRQSafeNullLock};
-use crate::{driver, print};
+use crate::{driver, info, print};
 use core::fmt;
 use noto_sans_mono_bitmap::{
     get_bitmap, get_bitmap_width, BitmapHeight, FontWeight,
@@ -12,8 +13,10 @@ use noto_sans_mono_bitmap::{
 //--------------------------------------------------------------------------------------------------
 // Gloval Definitions
 //--------------------------------------------------------------------------------------------------
-pub const SCREEN_WIDTH: u32 = 1024;
-pub const SCREEN_HEIGHT: u32 = 768;
+pub const BUFFER_WIDTH: usize = 1024;
+pub const BUFFER_HEIGHT: usize = 768;
+pub const FONT_WIDTH: usize = 8;
+pub const FONT_HEIGHT: usize = 16;
 
 //--------------------------------------------------------------------------------------------------
 // Public Definitions
@@ -33,6 +36,8 @@ pub struct FrameBufferInner {
     size: u32,
     row: usize,
     col: usize,
+    row_position: usize,
+    column_position: usize,
 }
 
 pub struct FrameBuffer {
@@ -62,8 +67,8 @@ pub struct RGBColor {
 impl FrameBufferInner {
     pub const fn new() -> Self {
         Self {
-            phyis_width: SCREEN_WIDTH,
-            phyis_height: SCREEN_HEIGHT,
+            phyis_width: BUFFER_WIDTH as u32,
+            phyis_height: BUFFER_HEIGHT as u32,
             width: 840,
             heigth: 480,
             pitch: 0,
@@ -74,6 +79,8 @@ impl FrameBufferInner {
             size: 0,
             row: 0,
             col: 0,
+            row_position: BUFFER_HEIGHT - FONT_HEIGHT,
+            column_position: 0,
         }
     }
 
@@ -143,11 +150,27 @@ impl FrameBufferInner {
         msg.data[25].write(0);
     }
 
+    fn read_pixel(&self, y: usize, x: usize) -> RGBColor {
+        let ptr = (self.addr
+            + y as u32 * self.pitch
+            + x as u32 * ((self.depth + 7) >> 3)) as *mut u32;
+        let ch = unsafe { core::ptr::read_volatile(ptr) };
+        let r = (ch & 0b11111111_00000000_00000000) >> 16;
+        let g = (ch & 0b11111111_00000000) >> 8;
+        let b = ch & 0b11111111;
+        RGBColor {
+            r: r as u8,
+            g: g as u8,
+            b: b as u8,
+        }
+    }
+
     fn write_pixel(&self, y: usize, x: usize, c: RGBColor) {
         // self.depth + 7は下位４bitを繰り上げている
         let ptr = (self.addr
             + y as u32 * self.pitch
             + x as u32 * ((self.depth + 7) >> 3)) as *mut u32;
+        // print!("{:?}\n", ptr);
         unsafe {
             core::ptr::write_volatile(
                 ptr,
@@ -156,7 +179,7 @@ impl FrameBufferInner {
         }
     }
 
-    fn write_char(&self, y: usize, x: usize, c: char) {
+    fn _write_char(&self, y: usize, x: usize, c: char) {
         let bitmap_char =
             get_bitmap(c, FontWeight::Regular, BitmapHeight::Size16)
                 .expect("unsupported char");
@@ -171,6 +194,51 @@ impl FrameBufferInner {
             }
         }
     }
+
+    pub fn write_char(&mut self, c: char) {
+        match c {
+            '\n' => self.new_line(),
+            _ => {
+                if self.column_position >= BUFFER_WIDTH - FONT_WIDTH {
+                    self.new_line();
+                }
+
+                self._write_char(self.row_position, self.column_position, c);
+                self.column_position += FONT_WIDTH;
+            }
+        }
+    }
+
+    pub fn new_line(&mut self) {
+        for row in FONT_HEIGHT..BUFFER_HEIGHT {
+            for col in 0..BUFFER_WIDTH {
+                let color = self.read_pixel(row, col);
+                self.write_pixel(row - FONT_HEIGHT, col, color);
+            }
+        }
+
+        for row in 0..FONT_HEIGHT {
+            self.clear_row(BUFFER_HEIGHT - row);
+        }
+        self.column_position = 0;
+    }
+
+    pub fn clear_row(&mut self, y: usize) {
+        let color = RGBColor { r: 0, g: 0, b: 0 };
+        for col in 0..BUFFER_WIDTH {
+            self.write_pixel(y, col, color);
+        }
+    }
+}
+
+impl fmt::Write for FrameBufferInner {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        for c in s.chars() {
+            self.write_char(c);
+        }
+
+        Ok(())
+    }
 }
 
 impl FrameBuffer {
@@ -180,12 +248,20 @@ impl FrameBuffer {
         }
     }
 
+    pub fn read_pixel(&self, y: usize, x: usize) -> RGBColor {
+        self.inner.lock(|buff| buff.read_pixel(y, x))
+    }
+
     pub fn write_pixel(&self, y: usize, x: usize, c: RGBColor) {
         self.inner.lock(|buff| buff.write_pixel(y, x, c))
     }
 
     pub fn write_char(&self, y: usize, x: usize, c: char) {
-        self.inner.lock(|buff| buff.write_char(y, x, c));
+        self.inner.lock(|buff| buff.write_char(c));
+    }
+
+    pub fn clear_row(&self, y: usize) {
+        self.inner.lock(|buff| buff.clear_row(y));
     }
 }
 
@@ -204,4 +280,16 @@ impl driver::interface::DeviceDriver for FrameBuffer {
     unsafe fn init(&self) -> Result<(), &'static str> {
         self.inner.lock(|buff| buff.init())
     }
+}
+
+impl screen::interface::Write for FrameBuffer {
+    fn write_fmt(&self, args: fmt::Arguments) -> fmt::Result {
+        self.inner.lock(|buff| fmt::Write::write_fmt(buff, args))
+    }
+}
+
+impl screen::interface::All for FrameBuffer {}
+
+pub fn screen() -> &'static impl screen::interface::Write {
+    &FRAMEBUFFER
 }
