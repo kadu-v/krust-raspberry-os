@@ -3,11 +3,14 @@ use crate::{
     cpu,
     synchronization::{interface::Mutex, IRQSafeNullLock},
 };
+
+use crate::print;
 use tock_registers::{
     interfaces::{Readable, Writeable},
     register_bitfields, register_structs,
     registers::{InMemoryRegister, ReadOnly},
 };
+use volatile::Volatile;
 
 // Descriptions taken from
 // raspberypi 3ap
@@ -51,10 +54,10 @@ pub enum MailBoxError {
 // Public Definitions
 //--------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 #[repr(C, align(16))]
 pub struct Messege {
-    pub data: [u32; 36],
+    pub data: [Volatile<u32>; 36],
     pub channel: u32,
 }
 
@@ -71,9 +74,47 @@ pub struct MailBox {
 //--------------------------------------------------------------------------------------------------
 impl Messege {
     // dataでアドレスを送るときは16byte境界にあラインされている必要がある
-    pub const unsafe fn new(channel: u32) -> Self {
+    pub unsafe fn new(channel: u32) -> Self {
+        let data = [
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+            Volatile::new(0u32),
+        ];
         Self {
-            data: [0; 36],
+            data: data,
             channel,
         }
     }
@@ -119,9 +160,7 @@ impl MailBoxInner {
 
             if received_data == data {
                 // この呼び出しがないとmsg.data[1]の値が最適化で定数値にされる？
-                cpu::nop();
-                cpu::nop();
-                if msg.data[1] == response {
+                if msg.data[1].read() == response {
                     return Ok(());
                 }
             }
