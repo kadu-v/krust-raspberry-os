@@ -80,7 +80,6 @@ impl FrameBufferInner {
     unsafe fn init(&mut self) -> Result<(), &'static str> {
         // send a message via property channel 8
         let mut msg = Messege::new(8);
-        print!("enter the init function of frame buffer");
         // init message for frame buffer
         self.init_msg(&mut msg);
 
@@ -88,7 +87,6 @@ impl FrameBufferInner {
         if let Err(_e) = MAILBOX.mailbox_call(&mut msg) {
             return Err("MailBox Error");
         }
-        print!("enter the init function of frame buffer");
 
         // set a settings
         self.depth = msg.data[15];
