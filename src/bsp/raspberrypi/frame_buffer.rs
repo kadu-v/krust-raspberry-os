@@ -2,13 +2,11 @@
 
 use super::driver::{FRAMEBUFFER, MAILBOX};
 use super::mailbox::*;
+use crate::driver;
 use crate::screen;
 use crate::synchronization::{interface::Mutex, IRQSafeNullLock};
-use crate::{driver, info, print};
 use core::fmt;
-use noto_sans_mono_bitmap::{
-    get_bitmap, get_bitmap_width, BitmapHeight, FontWeight,
-};
+use noto_sans_mono_bitmap::{get_bitmap, BitmapHeight, FontWeight};
 
 //--------------------------------------------------------------------------------------------------
 // Global Definitions
@@ -34,7 +32,9 @@ pub struct FrameBufferInner {
     _y_offset: u32,
     addr: u32,
     size: u32,
+    #[allow(dead_code)]
     row: usize,
+    #[allow(dead_code)]
     col: usize,
     row_position: usize,
     column_position: usize,
@@ -256,7 +256,7 @@ impl FrameBuffer {
         self.inner.lock(|buff| buff.write_pixel(y, x, c))
     }
 
-    pub fn write_char(&self, y: usize, x: usize, c: char) {
+    pub fn write_char(&self, _y: usize, _x: usize, c: char) {
         self.inner.lock(|buff| buff.write_char(c));
     }
 

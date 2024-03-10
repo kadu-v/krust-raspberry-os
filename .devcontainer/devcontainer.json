@@ -4,33 +4,32 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
-    "remoteUser": "root",
     "runArgs": [
         "--privileged",
-        // "--env=DISPLAY", // Linux のみ
+        "--env=DISPLAY=host.docker.internal:0" // macOS
+        // "--env=DISPLAY", // Linux 
     ],
-    "settings": {
-        "terminal.integrated.defaultProfile.linux": "bash",
-        "terminal.integrated.profiles.linux": {
-            "bash": {
-                "path": "bash"
+    "remoteUser": "root",
+    "customizations": {
+        // Configure properties specific to VS Code.
+        "vscode": {
+            // Set *default* container specific settings.json values on container create.
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "editor.formatOnSave": true
             },
-            "zsh": {
-                "path": "zsh"
-            },
-            "fish": {
-                "path": "fish"
-            },
-            "tmux": {
-                "path": "tmux",
-                "icon": "terminal-tmux"
-            },
-            "pwsh": {
-                "path": "pwsh",
-                "icon": "terminal-powershell"
-            }
-        },
-        "editor.formatOnSave": true,
-        "extensions": []
+            "extensions": []
+        }
+    },
+    "features": {
+        "common": {
+            "username": "vscode",
+            "uid": "automatic",
+            "gid": "automatic",
+            "installZsh": true,
+            "installOhMyZsh": false,
+            "upgradePackages": false,
+            "nonFreePackages": false
+        }
     }
 }

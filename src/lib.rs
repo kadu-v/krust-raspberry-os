@@ -2,7 +2,7 @@
 #![no_main]
 #![feature(panic_info_message)]
 #![feature(trait_alias)]
-#![feature(const_fn_fn_ptr_basics)]
+#![feature(const_option)]
 #![feature(format_args_nl)]
 #![feature(core_intrinsics)]
 #![feature(asm_const)]

@@ -3,12 +3,7 @@
 #![no_std]
 
 use exception::asynchronous::interface::IRQManager;
-use libkernel::{
-    bsp::{self, driver::FRAMEBUFFER, frame_buffer::RGBColor},
-    buffer_println, driver, exception, info, memory, print, println,
-    screen::interface::Write,
-    state, time, warn,
-};
+use libkernel::{bsp, driver, exception, info, memory, state, time, warn};
 
 //-------------------------------------------------------------------------------------------------
 // Kernel code
@@ -16,7 +11,6 @@ use libkernel::{
 #[no_mangle]
 unsafe fn kernel_init() -> ! {
     use driver::interface::DriverManager;
-    use libkernel::bsp::driver::FRAMEBUFFER;
     use memory::mmu::interface::MMU;
     // use driver::{FRAMEBUFFER, MAILBOX};
 
