@@ -5,7 +5,7 @@ target = "aarch64-unknown-none-softfloat"
 [target.aarch64-unknown-none-softfloat]
 rustflags = [
     "-C", "link-arg=-T./src/bsp/raspberrypi/link.ld",
-    "-C", "target-cpu=cortex-a53"
+    "-C", "target-cpu=cortex-a72"
 
 ]
 runner = "src/bsp/raspberrypi/qemu_runner.sh"
