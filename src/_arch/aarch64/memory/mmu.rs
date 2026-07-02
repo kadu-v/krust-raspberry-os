@@ -4,7 +4,6 @@ use crate::{
         translation_table::KernelTranslationTable, TranslationGranule,
     },
 };
-use core::intrinsics::unlikely;
 use cortex_a::{asm::barrier, registers::*};
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
@@ -91,16 +90,13 @@ use memory::mmu::MMUEnableError;
 
 impl memory::mmu::interface::MMU for MemoryManagementUnit {
     unsafe fn enable_mmu_and_caching(&self) -> Result<(), MMUEnableError> {
-        // unlikey: この条件分岐は失敗する可能性が高いことをコンパイラに知らせる
-        // CPUでの分岐予測で有利に働くのかもしれない
-        if unlikely(self.is_enabled()) {
+        if self.is_enabled() {
             return Err(MMUEnableError::AlreadyEnabled);
         }
 
         // 変換の粒度がサポートされていなければ、失敗させる
-        if unlikely(
-            !ID_AA64MMFR0_EL1.matches_all(ID_AA64MMFR0_EL1::TGran64::Supported),
-        ) {
+        if !ID_AA64MMFR0_EL1.matches_all(ID_AA64MMFR0_EL1::TGran64::Supported)
+        {
             return Err(MMUEnableError::Other(
                 "Traslation granule not suported in HW",
             ));
@@ -110,12 +106,14 @@ impl memory::mmu::interface::MMU for MemoryManagementUnit {
         self.set_up_mair();
 
         // メモリの変換テーブルのセットアップ
-        KERNEL_TABLES
+        // static mut への参照は UB になり得るため raw pointer を経由する
+        let kernel_tables = &mut *core::ptr::addr_of_mut!(KERNEL_TABLES);
+        kernel_tables
             .populate_tt_entries()
             .map_err(MMUEnableError::Other)?;
 
         // 変換テーブルのベースアドレスの設定
-        TTBR0_EL1.set_baddr(KERNEL_TABLES.phys_base_address());
+        TTBR0_EL1.set_baddr(kernel_tables.phys_base_address());
 
         self.configure_translation_control();
 

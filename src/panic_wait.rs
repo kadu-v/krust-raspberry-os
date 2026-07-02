@@ -57,11 +57,7 @@ macro_rules! panic_println {
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    if let Some(args) = info.message() {
-        panic_println!("\nKernel panic: {}", args);
-    } else {
-        panic_println!("\nKernel panic!");
-    }
+    panic_println!("Kernel panic: {}", info.message());
 
     cpu::wait_forever();
 }

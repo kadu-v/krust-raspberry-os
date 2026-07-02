@@ -14,7 +14,7 @@ pub fn board_name() -> &'static str {
         "Raspberry Pi 3"
     }
 
-    #[cfg(feature = "bsp_rp3ap")]
+    #[cfg(feature = "bsp_rpi3ap")]
     {
         "Rasberry Pi 3A+"
     }

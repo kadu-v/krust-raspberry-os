@@ -1,11 +1,7 @@
 #![no_std]
 #![no_main]
-#![feature(panic_info_message)]
 #![feature(trait_alias)]
-#![feature(const_option)]
 #![feature(format_args_nl)]
-#![feature(core_intrinsics)]
-#![feature(asm_const)]
 #![feature(linkage)]
 mod panic_wait;
 mod synchronization;

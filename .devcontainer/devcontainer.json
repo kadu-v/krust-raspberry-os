@@ -18,7 +18,9 @@
                 "terminal.integrated.defaultProfile.linux": "bash",
                 "editor.formatOnSave": true
             },
-            "extensions": []
+            "extensions": [
+                "rust-lang.rust-analyzer",
+            ]
         }
     },
     "features": {

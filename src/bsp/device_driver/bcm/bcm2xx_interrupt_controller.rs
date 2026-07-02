@@ -45,9 +45,7 @@ impl Iterator for PendingIRQs {
     type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
-        use core::intrinsics::cttz;
-
-        let next = cttz(self.bitmask);
+        let next = self.bitmask.trailing_zeros();
         if next == 64 {
             return None;
         }

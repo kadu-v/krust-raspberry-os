@@ -22,6 +22,7 @@ default = ["bsp_rpi4"]
 bsp_rpi3 = ["tock-registers"]
 bsp_rpi4 = ["tock-registers"]
 bsp_rpi3ap = ["tock-registers"]
+test_build = []
 
 [dependencies]
 tock-registers = { version = "0.7.x", default-features = false, features = ["register_types"], optional = true }
